@@ -1,112 +1,225 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+/**
+ * Households Screen
+ * Shows all households the user belongs to
+ */
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { useThemeColor } from '@/lib/hooks/use-theme-color';
+import { getUserHouseholds } from '@/lib/services/household-service';
+import { Household } from '@/lib/types/household';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  View
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function TabTwoScreen() {
+export default function HouseholdsScreen() {
+  const { user } = useAuth();
+  const backgroundColor = useThemeColor({}, 'background');
+  const borderColor = useThemeColor({}, 'border');
+  const errorColor = useThemeColor({}, 'error');
+  const badgeBgColor = useThemeColor({}, 'badgeBackground');
+  const badgeTextColor = useThemeColor({}, 'badgeText');
+  const tintColor = useThemeColor({}, 'tint');
+  const [households, setHouseholds] = useState<Household[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const loadHouseholds = async () => {
+      try {
+        setLoading(true);
+        const userHouseholds = await getUserHouseholds(user.uid);
+        setHouseholds(userHouseholds);
+        setError(null);
+      } catch (err: any) {
+        console.error('Error loading households:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHouseholds();
+  }, [user]);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
+    <SafeAreaView 
+      style={[styles.safeArea, { backgroundColor }]} 
+      edges={user?.emailVerified ? ['top'] : []}
+    >
+      {user?.emailVerified && <StatusBar style="auto" />}
+      <ThemedView style={styles.container}>
+        <View style={[styles.header, { borderBottomColor: borderColor }]}>
+          <ThemedText type="title">My Households</ThemedText>
+          <ThemedText style={styles.subtitle}>
+            View and manage your households
+          </ThemedText>
+        </View>
+
+        <ScrollView style={styles.content}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={tintColor} />
+            <ThemedText style={styles.loadingText}>Loading households...</ThemedText>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <ThemedText style={[styles.errorText, { color: errorColor }]}>Error: {error}</ThemedText>
+          </View>
+        ) : households.length === 0 ? (
+          <View style={styles.emptyState}>
+            <ThemedText type="subtitle">No households yet</ThemedText>
+            <ThemedText style={styles.emptyMessage}>
+              Household creation will be available in Phase 2.
             </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+          </View>
+        ) : (
+          <View style={styles.householdsList}>
+            {households.map((household) => (
+              <ThemedView 
+                key={household.id} 
+                style={styles.householdCard}
+                lightColor={Colors.light.cardBackground}
+                darkColor={Colors.dark.cardBackground}
+              >
+                <View style={styles.householdHeader}>
+                  <ThemedText type="defaultSemiBold" style={styles.householdName}>
+                    {household.name}
+                  </ThemedText>
+                  <View style={[styles.ownerBadge, { backgroundColor: badgeBgColor }]}>
+                    <ThemedText style={[styles.ownerText, { color: badgeTextColor }]}>
+                      {household.ownerId === user?.uid ? 'Owner' : 'Member'}
+                    </ThemedText>
+                  </View>
+                </View>
+                <ThemedText style={styles.householdDetail}>
+                  Created: {household.createdAt.toDate().toLocaleDateString()}
+                </ThemedText>
+                <ThemedText style={styles.householdDetail}>
+                  ID: {household.id}
+                </ThemedText>
+              </ThemedView>
+            ))}
+          </View>
+        )}
+
+        <ThemedView 
+          style={styles.infoCard}
+          lightColor={Colors.light.cardBackground}
+          darkColor={Colors.dark.cardBackground}
+        >
+          <ThemedText type="defaultSemiBold" style={styles.infoTitle}>
+            Coming in Phase 2
+          </ThemedText>
+          <ThemedText style={styles.infoText}>
+            • Create additional households
+          </ThemedText>
+          <ThemedText style={styles.infoText}>
+            • Invite other users to households
+          </ThemedText>
+          <ThemedText style={styles.infoText}>
+            • Manage household settings
+          </ThemedText>
+        </ThemedView>
+      </ScrollView>
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  safeArea: {
+    flex: 1,
   },
-  titleContainer: {
+  container: {
+    flex: 1,
+  },
+  header: {
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  subtitle: {
+    marginTop: 4,
+    opacity: 0.7,
+  },
+  content: {
+    flex: 1,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    opacity: 0.7,
+  },
+  errorContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  errorText: {
+    textAlign: 'center',
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyMessage: {
+    textAlign: 'center',
+    opacity: 0.7,
+    marginTop: 8,
+  },
+  householdsList: {
+    padding: 20,
+  },
+  householdCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  householdHeader: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  householdName: {
+    fontSize: 18,
+  },
+  ownerBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  ownerText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  householdDetail: {
+    fontSize: 12,
+    opacity: 0.7,
+    marginTop: 4,
+  },
+  infoCard: {
+    margin: 20,
+    padding: 20,
+    borderRadius: 12,
+  },
+  infoTitle: {
+    marginBottom: 12,
+  },
+  infoText: {
+    marginTop: 8,
+    opacity: 0.8,
   },
 });

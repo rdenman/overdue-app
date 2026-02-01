@@ -1,0 +1,21 @@
+/**
+ * Auth route group layout
+ * Contains unauthenticated screens (sign in, sign up, forgot password)
+ */
+
+import { Stack } from 'expo-router';
+
+export default function AuthLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+      }}
+    >
+      <Stack.Screen name="sign-in" />
+      <Stack.Screen name="sign-up" />
+      <Stack.Screen name="forgot-password" />
+    </Stack>
+  );
+}

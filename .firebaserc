@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "overdue-app-dev",
+    "dev": "overdue-app-dev",
+    "prod": "overdue-app-prod"
+  }
+}

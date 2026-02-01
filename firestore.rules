@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isHouseholdOwner(householdId) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/households/$(householdId)).data.ownerId == request.auth.uid;
+    }
+    
+    function isMemberOfHousehold(householdId) {
+      let memberId = householdId + '_' + request.auth.uid;
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/householdMembers/$(memberId));
+    }
+    
+    // Users collection
+    // Users can read and write their own profile only
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+    
+    // Households collection
+    match /households/{householdId} {
+      // Users can read households they are members of
+      allow read: if isMemberOfHousehold(householdId);
+      
+      // Any authenticated user can create a household (they become owner)
+      allow create: if isAuthenticated() && 
+                       request.resource.data.ownerId == request.auth.uid;
+      
+      // Only the owner can update or delete their household
+      allow update: if isHouseholdOwner(householdId);
+      allow delete: if isHouseholdOwner(householdId);
+    }
+    
+    // Household Members collection
+    match /householdMembers/{memberId} {
+      // Users can read their own memberships
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      
+      // Household owners can create memberships for their household
+      allow create: if isAuthenticated() && 
+                       isHouseholdOwner(request.resource.data.householdId);
+      
+      // Household owners can update memberships in their household
+      allow update: if isAuthenticated() && 
+                       isHouseholdOwner(resource.data.householdId);
+      
+      // Users can delete their own membership (leave household)
+      // OR household owners can remove members
+      allow delete: if isAuthenticated() && 
+                       (resource.data.userId == request.auth.uid || 
+                        isHouseholdOwner(resource.data.householdId));
+    }
+    
+    // Chores collection (Phase 3+)
+    match /chores/{choreId} {
+      // Members of the household can read chores
+      allow read: if isAuthenticated() && 
+                     isMemberOfHousehold(resource.data.householdId);
+      
+      // Members of the household can create chores
+      allow create: if isAuthenticated() && 
+                       isMemberOfHousehold(request.resource.data.householdId) &&
+                       request.resource.data.createdBy == request.auth.uid;
+      
+      // Members of the household can update chores
+      allow update: if isAuthenticated() && 
+                       isMemberOfHousehold(resource.data.householdId);
+      
+      // Members of the household can delete chores
+      allow delete: if isAuthenticated() && 
+                       isMemberOfHousehold(resource.data.householdId);
+    }
+    
+    // Invites collection (Phase 2+)
+    match /invites/{inviteId} {
+      // Invited user can read invites sent to their email
+      allow read: if isAuthenticated() && 
+                     (resource.data.invitedEmail == request.auth.token.email ||
+                      resource.data.invitedBy == request.auth.uid);
+      
+      // Household admins can create invites
+      allow create: if isAuthenticated() && 
+                       isHouseholdOwner(request.resource.data.householdId) &&
+                       request.resource.data.invitedBy == request.auth.uid;
+      
+      // Invited user can update their invite (accept/decline)
+      allow update: if isAuthenticated() && 
+                       resource.data.invitedEmail == request.auth.token.email;
+      
+      // Inviter or household owner can delete invites
+      allow delete: if isAuthenticated() && 
+                       (resource.data.invitedBy == request.auth.uid ||
+                        isHouseholdOwner(resource.data.householdId));
+    }
+  }
+}

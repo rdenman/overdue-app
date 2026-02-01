@@ -65,6 +65,10 @@
 - Prefer small, composable hooks.
 - Prefer editing existing files over creating new ones.
 - No unused code, no dead abstractions.
+- Use escaped entities in React component text, e.g. `&apos;` rather than `'`.
+- All file names should use kebab-case, e.g. `my-file.ts` rather than `myFile.ts` or `MyFile.ts`.
+- All colors should be defined in the constants file located at `constants/theme.ts`.
+- Always support both light and dark mode colors, using `lib/hooks/use-theme-color.ts` to get color values.
 
 ---
 

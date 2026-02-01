@@ -1,98 +1,148 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+/**
+ * Today's Chores Screen
+ * Shows chores due today (empty state for Phase 1)
+ */
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { Colors } from '@/constants/theme';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { useThemeColor } from '@/lib/hooks/use-theme-color';
+import { signOut } from '@/lib/services/auth-service';
+import { StatusBar } from 'expo-status-bar';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function HomeScreen() {
+export default function TodayScreen() {
+  const { user } = useAuth();
+  const backgroundColor = useThemeColor({}, 'background');
+  const borderColor = useThemeColor({}, 'border');
+  const buttonBgColor = useThemeColor({}, 'buttonBackground');
+  const buttonTextColor = useThemeColor({}, 'buttonText');
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView 
+      style={[styles.safeArea, { backgroundColor }]} 
+      edges={user?.emailVerified ? ['top'] : []}
+    >
+      {user?.emailVerified && <StatusBar style="auto" />}
+      <ThemedView style={styles.container}>
+        <View style={[styles.header, { borderBottomColor: borderColor }]}>
+          <View>
+            <ThemedText type="title">Today&apos;s Chores</ThemedText>
+            <ThemedText style={styles.greeting}>
+              Hello, {user?.displayName || 'there'}!
+            </ThemedText>
+          </View>
+          <TouchableOpacity 
+            style={[styles.signOutButton, { backgroundColor: buttonBgColor }]} 
+            onPress={handleSignOut}
+          >
+            <Text style={[styles.signOutText, { color: buttonTextColor }]}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
+        <ScrollView style={styles.content}>
+          <View style={styles.emptyState}>
+            <ThemedText type="subtitle" style={styles.emptyTitle}>
+              No chores yet
+            </ThemedText>
+            <ThemedText style={styles.emptyMessage}>
+              Chore creation will be available in the next phase.
+            </ThemedText>
+            <ThemedText style={styles.emptyMessage}>
+              For now, you can explore your households in the Explore tab.
+            </ThemedText>
+          </View>
+
+          <ThemedView 
+            style={styles.infoCard}
+            lightColor={Colors.light.cardBackground}
+            darkColor={Colors.dark.cardBackground}
+          >
+            <ThemedText type="defaultSemiBold" style={styles.infoTitle}>
+              Phase 1 Complete ✓
+            </ThemedText>
+            <ThemedText style={styles.infoText}>
+              • Authentication working
+            </ThemedText>
+            <ThemedText style={styles.infoText}>
+              • User profile created
+            </ThemedText>
+            <ThemedText style={styles.infoText}>
+              • Default &quot;Personal&quot; household created
+            </ThemedText>
+            <ThemedText style={styles.infoText}>
+              • Email verification enabled
+            </ThemedText>
+          </ThemedView>
+        </ScrollView>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  safeArea: {
+    flex: 1,
   },
-  stepContainer: {
-    gap: 8,
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  greeting: {
+    marginTop: 4,
+    opacity: 0.7,
+  },
+  signOutButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  signOutText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  content: {
+    flex: 1,
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyTitle: {
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  emptyMessage: {
+    textAlign: 'center',
+    opacity: 0.7,
+    marginTop: 8,
+  },
+  infoCard: {
+    margin: 20,
+    padding: 20,
+    borderRadius: 12,
+  },
+  infoTitle: {
+    marginBottom: 12,
+  },
+  infoText: {
+    marginTop: 8,
+    opacity: 0.8,
   },
 });
