@@ -5,6 +5,7 @@
 
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -192,5 +193,126 @@ export async function getHouseholdMember(
   } catch (error) {
     console.error('Error getting household member:', error);
     throw new Error('Failed to load household member');
+  }
+}
+
+/**
+ * Get all members of a household
+ */
+export async function getHouseholdMembers(householdId: string): Promise<HouseholdMember[]> {
+  try {
+    const membersRef = collection(firestore, 'householdMembers');
+    const membersQuery = query(membersRef, where('householdId', '==', householdId));
+    const membersSnap = await getDocs(membersQuery);
+    
+    return membersSnap.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+      } as HouseholdMember;
+    });
+  } catch (error) {
+    console.error('Error getting household members:', error);
+    throw new Error('Failed to load household members');
+  }
+}
+
+/**
+ * Remove a member from a household
+ */
+export async function removeHouseholdMember(
+  householdId: string,
+  userId: string,
+  requestingUserId: string
+): Promise<void> {
+  try {
+    // Verify requesting user is either removing themselves or is an admin
+    const requestingMember = await getHouseholdMember(householdId, requestingUserId);
+    if (!requestingMember) {
+      throw new Error('You are not a member of this household');
+    }
+
+    const isSelfRemoval = userId === requestingUserId;
+    const isAdmin = requestingMember.role === 'admin';
+
+    if (!isSelfRemoval && !isAdmin) {
+      throw new Error('Only admins can remove other members');
+    }
+
+    // If removing self and is admin, check if last admin
+    if (isSelfRemoval && isAdmin) {
+      const members = await getHouseholdMembers(householdId);
+      const adminCount = members.filter((m) => m.role === 'admin').length;
+      
+      if (adminCount === 1) {
+        throw new Error(
+          'Cannot leave household as the last admin. Please delete the household or promote another member to admin first.'
+        );
+      }
+    }
+
+    const memberId = `${householdId}_${userId}`;
+    const memberRef = doc(firestore, 'householdMembers', memberId);
+    await deleteDoc(memberRef);
+  } catch (error) {
+    console.error('Error removing household member:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a household and all related data
+ * Only the owner can delete a household
+ */
+export async function deleteHousehold(
+  householdId: string,
+  requestingUserId: string
+): Promise<void> {
+  try {
+    // Verify requesting user is the owner
+    const household = await getHousehold(householdId);
+    if (!household) {
+      throw new Error('Household not found');
+    }
+
+    if (household.ownerId !== requestingUserId) {
+      throw new Error('Only the household owner can delete the household');
+    }
+
+    // Delete invites first (while owner's membership still exists for security rules)
+    const invitesRef = collection(firestore, 'invites');
+    const invitesQuery = query(invitesRef, where('householdId', '==', householdId));
+    const invitesSnap = await getDocs(invitesQuery);
+    for (const inviteDoc of invitesSnap.docs) {
+      await deleteDoc(inviteDoc.ref);
+    }
+
+    // Delete chores (while owner's membership still exists for security rules)
+    const choresRef = collection(firestore, 'chores');
+    const choresQuery = query(choresRef, where('householdId', '==', householdId));
+    const choresSnap = await getDocs(choresQuery);
+    for (const choreDoc of choresSnap.docs) {
+      await deleteDoc(choreDoc.ref);
+    }
+
+    // Delete all household members, but delete the owner's membership last
+    // (security rules require the owner's membership to exist for admin checks)
+    const members = await getHouseholdMembers(householdId);
+    const otherMembers = members.filter((m) => m.userId !== requestingUserId);
+    const ownerMember = members.find((m) => m.userId === requestingUserId);
+
+    for (const member of otherMembers) {
+      await deleteDoc(doc(firestore, 'householdMembers', member.id));
+    }
+    if (ownerMember) {
+      await deleteDoc(doc(firestore, 'householdMembers', ownerMember.id));
+    }
+
+    // Finally, delete the household itself
+    await deleteDoc(doc(firestore, 'households', householdId));
+  } catch (error) {
+    console.error('Error deleting household:', error);
+    throw error;
   }
 }

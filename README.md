@@ -4,7 +4,7 @@ A mobile-first chore tracking app that helps households coordinate recurring tas
 
 ## Project Status
 
-**Phase 1 Complete** ✅
+**Phase 2 Complete** ✅
 
 - ✅ Firebase integration with offline persistence
 - ✅ Email/password authentication
@@ -12,8 +12,12 @@ A mobile-first chore tracking app that helps households coordinate recurring tas
 - ✅ Email verification
 - ✅ Protected routes and navigation
 - ✅ Firestore security rules deployed
+- ✅ Manual household creation
+- ✅ Household invitations (email-based)
+- ✅ Household member management
+- ✅ Invitation acceptance/decline flow
 
-**Coming Next:** Phase 2 - Household management and invitations
+**Coming Next:** Phase 3 - Chore CRUD operations
 
 ## Tech Stack
 
@@ -196,6 +200,13 @@ This project follows strict guidelines (see [`.cursor/rules.md`](.cursor/rules.m
    - Test forgot password flow
    - Check email delivery
 
+4. **Household Management:**
+   - Create a new household
+   - Invite a member by email
+   - Accept/decline invitations
+   - View household members
+   - Manage household settings
+
 ## Documentation
 
 - **[Project Charter](docs/PROJECT_CHARTER.md)** - Product requirements and principles
@@ -203,6 +214,7 @@ This project follows strict guidelines (see [`.cursor/rules.md`](.cursor/rules.m
 - **[Firestore Schema](docs/FIRESTORE_SCHEMA.md)** - Database structure and relationships
 - **[Security Rules Deployment](docs/SECURITY_RULES_DEPLOYMENT.md)** - How to deploy and test rules
 - **[Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)** - Phase 0 + 1 completion report
+- **[Phase 2 Summary](docs/PHASE_2_SUMMARY.md)** - Phase 2 household management implementation
 - **[Cursor Rules](.cursor/rules.md)** - Development guidelines for AI-assisted coding
 
 ## Firebase Configuration
@@ -306,7 +318,7 @@ See [Expo EAS Build documentation](https://docs.expo.dev/build/introduction/) fo
 
 - ✅ **Phase 0:** Foundation & Infrastructure
 - ✅ **Phase 1:** Authentication & Basic Data Access
-- 🚧 **Phase 2:** Household Management & Invitations
+- ✅ **Phase 2:** Household Management & Invitations
 - ⏳ **Phase 3:** Chore CRUD Operations
 - ⏳ **Phase 4:** Interval Scheduling & Completion Tracking
 - ⏳ **Phase 5:** Overdue Detection & Notifications

@@ -73,7 +73,9 @@ export interface ChoreDocument {
 export interface InviteDocument {
   id: string;
   householdId: string;
+  householdName: string;
   invitedBy: string;
+  inviterName: string;
   invitedEmail: string;
   role: HouseholdRole;
   status: 'pending' | 'accepted' | 'declined' | 'expired';

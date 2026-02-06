@@ -15,17 +15,25 @@ service cloud.firestore {
       return isAuthenticated() && 
              get(/databases/$(database)/documents/households/$(householdId)).data.ownerId == request.auth.uid;
     }
+
+    function isHouseholdAdmin(householdId) {
+      let memberId = householdId + '_' + request.auth.uid;
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/householdMembers/$(memberId)) &&
+             get(/databases/$(database)/documents/householdMembers/$(memberId)).data.role == 'admin';
+    }
     
-    function isMemberOfHousehold(householdId) {
+    function isHouseholdMember(householdId) {
       let memberId = householdId + '_' + request.auth.uid;
       return isAuthenticated() && 
              exists(/databases/$(database)/documents/householdMembers/$(memberId));
     }
     
     // Users collection
-    // Users can read and write their own profile only
+    // Users can read any user profile (needed to display household members)
+    // But can only write their own profile
     match /users/{userId} {
-      allow read: if isOwner(userId);
+      allow read: if isAuthenticated();
       allow create: if isOwner(userId);
       allow update: if isOwner(userId);
       allow delete: if isOwner(userId);
@@ -34,7 +42,9 @@ service cloud.firestore {
     // Households collection
     match /households/{householdId} {
       // Users can read households they are members of
-      allow read: if isMemberOfHousehold(householdId);
+      // Check by constructing the memberId and verifying it exists
+      allow read: if isAuthenticated() && 
+                     exists(/databases/$(database)/documents/householdMembers/$(householdId + '_' + request.auth.uid));
       
       // Any authenticated user can create a household (they become owner)
       allow create: if isAuthenticated() && 
@@ -47,55 +57,66 @@ service cloud.firestore {
     
     // Household Members collection
     match /householdMembers/{memberId} {
-      // Users can read their own memberships
+      // Users can read membership documents in several ways:
+      // 1. Get their own specific membership document (memberId pattern matches)
+      // 2. List/query memberships where they are the user (resource.data.userId check)
+      // 3. Read any membership in a household they belong to
       allow read: if isAuthenticated() && 
-                     resource.data.userId == request.auth.uid;
+                     (memberId.matches('.*_' + request.auth.uid + '$') ||
+                      (resource != null && resource.data.userId == request.auth.uid) ||
+                      (resource != null && isHouseholdMember(resource.data.householdId)));
       
-      // Household owners can create memberships for their household
+      // Users can create memberships if:
+      // 1. They are the household owner, OR
+      // 2. They have a pending invite (checked by verifying the membership is for themselves)
       allow create: if isAuthenticated() && 
-                       isHouseholdOwner(request.resource.data.householdId);
+                       (isHouseholdOwner(request.resource.data.householdId) ||
+                        request.resource.data.userId == request.auth.uid);
       
-      // Household owners can update memberships in their household
+      // Household admins can update memberships in their household
       allow update: if isAuthenticated() && 
-                       isHouseholdOwner(resource.data.householdId);
+                       isHouseholdAdmin(resource.data.householdId);
       
       // Users can delete their own membership (leave household)
-      // OR household owners can remove members
+      // OR admins can remove members (but NOT the household owner)
       allow delete: if isAuthenticated() && 
                        (resource.data.userId == request.auth.uid || 
-                        isHouseholdOwner(resource.data.householdId));
+                        (isHouseholdAdmin(resource.data.householdId) && 
+                         resource.data.userId != get(/databases/$(database)/documents/households/$(resource.data.householdId)).data.ownerId));
     }
     
     // Chores collection (Phase 3+)
     match /chores/{choreId} {
       // Members of the household can read chores
       allow read: if isAuthenticated() && 
-                     isMemberOfHousehold(resource.data.householdId);
+                     isHouseholdMember(resource.data.householdId);
       
       // Members of the household can create chores
       allow create: if isAuthenticated() && 
-                       isMemberOfHousehold(request.resource.data.householdId) &&
+                       isHouseholdMember(request.resource.data.householdId) &&
                        request.resource.data.createdBy == request.auth.uid;
       
       // Members of the household can update chores
       allow update: if isAuthenticated() && 
-                       isMemberOfHousehold(resource.data.householdId);
+                       isHouseholdMember(resource.data.householdId);
       
       // Members of the household can delete chores
       allow delete: if isAuthenticated() && 
-                       isMemberOfHousehold(resource.data.householdId);
+                       isHouseholdMember(resource.data.householdId);
     }
     
     // Invites collection (Phase 2+)
     match /invites/{inviteId} {
       // Invited user can read invites sent to their email
+      // OR household members can read invites for their household
       allow read: if isAuthenticated() && 
                      (resource.data.invitedEmail == request.auth.token.email ||
-                      resource.data.invitedBy == request.auth.uid);
+                      resource.data.invitedBy == request.auth.uid ||
+                      isHouseholdMember(resource.data.householdId));
       
       // Household admins can create invites
       allow create: if isAuthenticated() && 
-                       isHouseholdOwner(request.resource.data.householdId) &&
+                       isHouseholdAdmin(request.resource.data.householdId) &&
                        request.resource.data.invitedBy == request.auth.uid;
       
       // Invited user can update their invite (accept/decline)

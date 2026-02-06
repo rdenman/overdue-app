@@ -3,6 +3,7 @@
  * Shows all households the user belongs to
  */
 
+import { CreateHouseholdModal } from '@/components/create-household-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
@@ -10,18 +11,24 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { getUserHouseholds } from '@/lib/services/household-service';
 import { Household } from '@/lib/types/household';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
+  Text,
+  useColorScheme,
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HouseholdsScreen() {
   const { user } = useAuth();
+  const router = useRouter();
+  const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const errorColor = useThemeColor({}, 'error');
@@ -31,26 +38,37 @@ export default function HouseholdsScreen() {
   const [households, setHouseholds] = useState<Household[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  useEffect(() => {
+  // Button text color: dark text on light tint (dark mode), white text on dark tint (light mode)
+  const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
+
+  const loadHouseholds = useCallback(async () => {
     if (!user) return;
-
-    const loadHouseholds = async () => {
-      try {
-        setLoading(true);
-        const userHouseholds = await getUserHouseholds(user.uid);
-        setHouseholds(userHouseholds);
-        setError(null);
-      } catch (err: any) {
-        console.error('Error loading households:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadHouseholds();
+    
+    try {
+      setLoading(true);
+      const userHouseholds = await getUserHouseholds(user.uid);
+      setHouseholds(userHouseholds);
+      setError(null);
+    } catch (err: any) {
+      console.error('Error loading households:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  // Load on initial focus and reload when screen regains focus (e.g., after deleting a household)
+  useFocusEffect(
+    useCallback(() => {
+      loadHouseholds();
+    }, [loadHouseholds])
+  );
+
+  const handleHouseholdPress = (householdId: string) => {
+    router.push(`/households/${householdId}/settings`);
+  };
 
   return (
     <SafeAreaView 
@@ -60,10 +78,20 @@ export default function HouseholdsScreen() {
       {user?.emailVerified && <StatusBar style="auto" />}
       <ThemedView style={styles.container}>
         <View style={[styles.header, { borderBottomColor: borderColor }]}>
-          <ThemedText type="title">My Households</ThemedText>
-          <ThemedText style={styles.subtitle}>
-            View and manage your households
-          </ThemedText>
+          <View style={styles.headerContent}>
+            <View>
+              <ThemedText type="title">My Households</ThemedText>
+              <ThemedText style={styles.subtitle}>
+                View and manage your households
+              </ThemedText>
+            </View>
+            <Pressable
+              style={[styles.createButton, { backgroundColor: tintColor }]}
+              onPress={() => setShowCreateModal(true)}
+            >
+              <Text style={[styles.createButtonText, { color: buttonTextColor }]}>+ New</Text>
+            </Pressable>
+          </View>
         </View>
 
         <ScrollView style={styles.content}>
@@ -86,53 +114,46 @@ export default function HouseholdsScreen() {
         ) : (
           <View style={styles.householdsList}>
             {households.map((household) => (
-              <ThemedView 
-                key={household.id} 
-                style={styles.householdCard}
-                lightColor={Colors.light.cardBackground}
-                darkColor={Colors.dark.cardBackground}
+              <Pressable
+                key={household.id}
+                onPress={() => handleHouseholdPress(household.id)}
               >
-                <View style={styles.householdHeader}>
-                  <ThemedText type="defaultSemiBold" style={styles.householdName}>
-                    {household.name}
-                  </ThemedText>
-                  <View style={[styles.ownerBadge, { backgroundColor: badgeBgColor }]}>
-                    <ThemedText style={[styles.ownerText, { color: badgeTextColor }]}>
-                      {household.ownerId === user?.uid ? 'Owner' : 'Member'}
+                <ThemedView 
+                  style={styles.householdCard}
+                  lightColor={Colors.light.cardBackground}
+                  darkColor={Colors.dark.cardBackground}
+                >
+                  <View style={styles.householdHeader}>
+                    <ThemedText type="defaultSemiBold" style={styles.householdName}>
+                      {household.name}
                     </ThemedText>
+                    <View style={[styles.ownerBadge, { backgroundColor: badgeBgColor }]}>
+                      <ThemedText style={[styles.ownerText, { color: badgeTextColor }]}>
+                        {household.ownerId === user?.uid ? 'Owner' : 'Member'}
+                      </ThemedText>
+                    </View>
                   </View>
-                </View>
-                <ThemedText style={styles.householdDetail}>
-                  Created: {household.createdAt.toDate().toLocaleDateString()}
-                </ThemedText>
-                <ThemedText style={styles.householdDetail}>
-                  ID: {household.id}
-                </ThemedText>
-              </ThemedView>
+                  <ThemedText style={styles.householdDetail}>
+                    Created: {household.createdAt.toDate().toLocaleDateString()}
+                  </ThemedText>
+                  <ThemedText style={styles.householdDetail}>
+                    Tap to view settings
+                  </ThemedText>
+                </ThemedView>
+              </Pressable>
             ))}
           </View>
         )}
 
-        <ThemedView 
-          style={styles.infoCard}
-          lightColor={Colors.light.cardBackground}
-          darkColor={Colors.dark.cardBackground}
-        >
-          <ThemedText type="defaultSemiBold" style={styles.infoTitle}>
-            Coming in Phase 2
-          </ThemedText>
-          <ThemedText style={styles.infoText}>
-            • Create additional households
-          </ThemedText>
-          <ThemedText style={styles.infoText}>
-            • Invite other users to households
-          </ThemedText>
-          <ThemedText style={styles.infoText}>
-            • Manage household settings
-          </ThemedText>
-        </ThemedView>
       </ScrollView>
       </ThemedView>
+
+      <CreateHouseholdModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={loadHouseholds}
+        userId={user?.uid || ''}
+      />
     </SafeAreaView>
   );
 }
@@ -145,12 +166,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   subtitle: {
     marginTop: 4,
     opacity: 0.7,
+  },
+  createButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  createButtonText: {
+    fontWeight: '600',
+    fontSize: 14,
   },
   content: {
     flex: 1,
@@ -209,17 +245,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.7,
     marginTop: 4,
-  },
-  infoCard: {
-    margin: 20,
-    padding: 20,
-    borderRadius: 12,
-  },
-  infoTitle: {
-    marginBottom: 12,
-  },
-  infoText: {
-    marginTop: 8,
-    opacity: 0.8,
   },
 });

@@ -11,11 +11,13 @@ import {
 } from 'firebase/firestore';
 import { Chore } from '../types/chore';
 import { Household, HouseholdMember } from '../types/household';
+import { HouseholdInvite } from '../types/invite';
 import { User } from '../types/user';
 import {
   ChoreDocument,
   HouseholdDocument,
   HouseholdMemberDocument,
+  InviteDocument,
   UserDocument,
 } from './types';
 
@@ -143,6 +145,44 @@ export const choreConverter: FirestoreDataConverter<Chore> = {
       dueAt: data.dueAt,
       isOverdue: data.isOverdue,
       lastCompletion: data.lastCompletion,
+    };
+  },
+};
+
+/**
+ * Invite converter
+ */
+export const inviteConverter: FirestoreDataConverter<HouseholdInvite> = {
+  toFirestore(invite: HouseholdInvite): DocumentData {
+    return {
+      id: invite.id,
+      householdId: invite.householdId,
+      householdName: invite.householdName,
+      invitedBy: invite.invitedBy,
+      inviterName: invite.inviterName,
+      invitedEmail: invite.invitedEmail,
+      role: invite.role,
+      status: invite.status,
+      createdAt: invite.createdAt,
+      expiresAt: invite.expiresAt,
+    };
+  },
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot,
+    options: SnapshotOptions
+  ): HouseholdInvite {
+    const data = snapshot.data(options) as InviteDocument;
+    return {
+      id: data.id,
+      householdId: data.householdId,
+      householdName: data.householdName,
+      invitedBy: data.invitedBy,
+      inviterName: data.inviterName,
+      invitedEmail: data.invitedEmail,
+      role: data.role,
+      status: data.status,
+      createdAt: data.createdAt,
+      expiresAt: data.expiresAt,
     };
   },
 };

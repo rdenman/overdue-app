@@ -38,14 +38,3 @@ export interface HouseholdMemberCreateInput {
   userId: string;
   role: HouseholdRole;
 }
-
-export interface HouseholdInvite {
-  id: string;
-  householdId: string;
-  invitedBy: string;
-  invitedEmail: string;
-  role: HouseholdRole;
-  status: 'pending' | 'accepted' | 'declined' | 'expired';
-  createdAt: Timestamp;
-  expiresAt: Timestamp;
-}
