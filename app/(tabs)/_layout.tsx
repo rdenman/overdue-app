@@ -1,5 +1,5 @@
-import { Tabs, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect } from 'react';
+import { Tabs } from 'expo-router';
+import React from 'react';
 import { useColorScheme } from 'react-native';
 
 import { EmailVerificationBanner } from '@/components/email-verification-banner';
@@ -7,24 +7,13 @@ import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/lib/hooks/use-auth';
-import { InviteCountProvider, useInviteCount } from '@/lib/contexts/invite-count-context';
+import { usePendingInvites } from '@/lib/hooks/use-invites';
 
-function TabLayoutContent() {
+export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { count: inviteCount, refreshCount } = useInviteCount();
-
-  useEffect(() => {
-    // Refresh invite count every 30 seconds
-    const interval = setInterval(refreshCount, 30000);
-    return () => clearInterval(interval);
-  }, [refreshCount]);
-
-  // Refresh invite count whenever the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      refreshCount();
-    }, [refreshCount])
-  );
+  const { user } = useAuth();
+  const { data: pendingInvites } = usePendingInvites(user?.email);
+  const inviteCount = pendingInvites?.length ?? 0;
 
   return (
     <>
@@ -59,15 +48,5 @@ function TabLayoutContent() {
         />
       </Tabs>
     </>
-  );
-}
-
-export default function TabLayout() {
-  const { user } = useAuth();
-
-  return (
-    <InviteCountProvider userEmail={user?.email || null}>
-      <TabLayoutContent />
-    </InviteCountProvider>
   );
 }

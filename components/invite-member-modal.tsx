@@ -6,9 +6,9 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
+import { useCreateInvite } from '@/lib/hooks/use-invites';
 import { useNetworkStatus } from '@/lib/hooks/use-network-status';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
-import { createInvite } from '@/lib/services/invite-service';
 import { HouseholdRole } from '@/lib/types/household';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -44,9 +44,10 @@ export function InviteMemberModal({
 }: InviteMemberModalProps) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<HouseholdRole>('member');
-  const [loading, setLoading] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const translateY = useRef(new Animated.Value(0)).current;
+
+  const createInviteMutation = useCreateInvite(householdId);
 
   const colorScheme = useColorScheme();
   const { isOnline } = useNetworkStatus();
@@ -113,9 +114,9 @@ export function InviteMemberModal({
     };
   }, [visible, translateY]);
 
-  const validateEmail = (email: string): boolean => {
+  const validateEmail = (emailValue: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return emailRegex.test(emailValue);
   };
 
   const handleSendInvite = async () => {
@@ -141,8 +142,7 @@ export function InviteMemberModal({
     }
 
     try {
-      setLoading(true);
-      await createInvite({
+      await createInviteMutation.mutateAsync({
         householdId,
         invitedBy: userId,
         invitedEmail: trimmedEmail,
@@ -157,8 +157,6 @@ export function InviteMemberModal({
     } catch (error: any) {
       console.error('Error sending invite:', error);
       Alert.alert('Error', error.message || 'Failed to send invitation');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -167,6 +165,8 @@ export function InviteMemberModal({
     setRole('member');
     onClose();
   };
+
+  const loading = createInviteMutation.isPending;
 
   return (
     <Modal

@@ -1,6 +1,8 @@
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthProvider, useAuthContext } from '@/lib/contexts/auth-context';
 import { SyncProvider } from '@/lib/contexts/sync-context';
+import { queryClient } from '@/lib/query-client';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -47,11 +49,13 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <SyncProvider>
-          <RootLayoutNav />
-        </SyncProvider>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <SyncProvider>
+            <RootLayoutNav />
+          </SyncProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

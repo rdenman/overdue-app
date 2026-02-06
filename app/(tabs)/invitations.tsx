@@ -8,17 +8,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useAcceptInvite, useDeclineInvite, usePendingInvites } from '@/lib/hooks/use-invites';
 import { useNetworkStatus } from '@/lib/hooks/use-network-status';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
-import { useInviteCount } from '@/lib/contexts/invite-count-context';
-import {
-  acceptInvite,
-  declineInvite,
-  getPendingInvitesForEmail,
-} from '@/lib/services/invite-service';
-import { InviteWithHouseholdInfo } from '@/lib/types/invite';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -32,38 +26,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function InvitationsScreen() {
   const { user } = useAuth();
   const { isOnline } = useNetworkStatus();
-  const { refreshCount } = useInviteCount();
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const tintColor = useThemeColor({}, 'tint');
-  const [invites, setInvites] = useState<InviteWithHouseholdInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const loadInvites = useCallback(async () => {
-    if (!user?.email) return;
+  const {
+    data: invites = [],
+    isLoading: loading,
+    error,
+    isRefetching,
+    refetch,
+  } = usePendingInvites(user?.email);
 
-    try {
-      const pendingInvites = await getPendingInvitesForEmail(user.email);
-      setInvites(pendingInvites);
-      setError(null);
-    } catch (err: any) {
-      console.error('Error loading invites:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [user?.email]);
-
-  useEffect(() => {
-    loadInvites();
-  }, [loadInvites]);
+  const acceptMutation = useAcceptInvite(user?.email);
+  const declineMutation = useDeclineInvite(user?.email);
 
   const handleRefresh = () => {
-    setRefreshing(true);
-    loadInvites();
+    refetch();
   };
 
   const handleAccept = async (inviteId: string) => {
@@ -79,14 +58,11 @@ export default function InvitationsScreen() {
     }
 
     try {
-      await acceptInvite(inviteId, user.uid);
+      await acceptMutation.mutateAsync({ inviteId, userId: user.uid });
       Alert.alert('Success', 'You have joined the household!');
-      await loadInvites();
-      // Refresh the badge count
-      await refreshCount();
-    } catch (error: any) {
-      console.error('Error accepting invite:', error);
-      Alert.alert('Error', error.message || 'Failed to accept invitation');
+    } catch (err: any) {
+      console.error('Error accepting invite:', err);
+      Alert.alert('Error', err.message || 'Failed to accept invitation');
     }
   };
 
@@ -101,14 +77,11 @@ export default function InvitationsScreen() {
     }
 
     try {
-      await declineInvite(inviteId);
+      await declineMutation.mutateAsync(inviteId);
       Alert.alert('Declined', 'You have declined the invitation');
-      await loadInvites();
-      // Refresh the badge count
-      await refreshCount();
-    } catch (error: any) {
-      console.error('Error declining invite:', error);
-      Alert.alert('Error', error.message || 'Failed to decline invitation');
+    } catch (err: any) {
+      console.error('Error declining invite:', err);
+      Alert.alert('Error', err.message || 'Failed to decline invitation');
     }
   };
 
@@ -130,7 +103,7 @@ export default function InvitationsScreen() {
           style={styles.content}
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
+              refreshing={isRefetching && !loading}
               onRefresh={handleRefresh}
               tintColor={tintColor}
             />
@@ -143,7 +116,7 @@ export default function InvitationsScreen() {
             </View>
           ) : error ? (
             <View style={styles.errorContainer}>
-              <ThemedText style={styles.errorText}>Error: {error}</ThemedText>
+              <ThemedText style={styles.errorText}>Error: {error.message}</ThemedText>
             </View>
           ) : invites.length === 0 ? (
             <View style={styles.emptyState}>

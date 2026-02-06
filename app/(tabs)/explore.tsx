@@ -8,12 +8,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useUserHouseholds } from '@/lib/hooks/use-households';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
-import { getUserHouseholds } from '@/lib/services/household-service';
-import { Household } from '@/lib/types/household';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -35,36 +34,16 @@ export default function HouseholdsScreen() {
   const badgeBgColor = useThemeColor({}, 'badgeBackground');
   const badgeTextColor = useThemeColor({}, 'badgeText');
   const tintColor = useThemeColor({}, 'tint');
-  const [households, setHouseholds] = useState<Household[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const {
+    data: households = [],
+    isLoading: loading,
+    error,
+  } = useUserHouseholds(user?.uid);
 
   // Button text color: dark text on light tint (dark mode), white text on dark tint (light mode)
   const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
-
-  const loadHouseholds = useCallback(async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const userHouseholds = await getUserHouseholds(user.uid);
-      setHouseholds(userHouseholds);
-      setError(null);
-    } catch (err: any) {
-      console.error('Error loading households:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  // Load on initial focus and reload when screen regains focus (e.g., after deleting a household)
-  useFocusEffect(
-    useCallback(() => {
-      loadHouseholds();
-    }, [loadHouseholds])
-  );
 
   const handleHouseholdPress = (householdId: string) => {
     router.push(`/households/${householdId}/settings`);
@@ -102,7 +81,7 @@ export default function HouseholdsScreen() {
           </View>
         ) : error ? (
           <View style={styles.errorContainer}>
-            <ThemedText style={[styles.errorText, { color: errorColor }]}>Error: {error}</ThemedText>
+            <ThemedText style={[styles.errorText, { color: errorColor }]}>Error: {error.message}</ThemedText>
           </View>
         ) : households.length === 0 ? (
           <View style={styles.emptyState}>
@@ -151,7 +130,6 @@ export default function HouseholdsScreen() {
       <CreateHouseholdModal
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onSuccess={loadHouseholds}
         userId={user?.uid || ''}
       />
     </SafeAreaView>

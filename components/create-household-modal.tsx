@@ -6,8 +6,8 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
+import { useCreateHousehold } from '@/lib/hooks/use-households';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
-import { createHousehold } from '@/lib/services/household-service';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -28,20 +28,19 @@ import {
 interface CreateHouseholdModalProps {
   visible: boolean;
   onClose: () => void;
-  onSuccess: () => void;
   userId: string;
 }
 
 export function CreateHouseholdModal({
   visible,
   onClose,
-  onSuccess,
   userId,
 }: CreateHouseholdModalProps) {
   const [householdName, setHouseholdName] = useState('');
-  const [loading, setLoading] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const translateY = useRef(new Animated.Value(0)).current;
+
+  const createHouseholdMutation = useCreateHousehold();
 
   const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
@@ -126,20 +125,16 @@ export function CreateHouseholdModal({
     }
 
     try {
-      setLoading(true);
-      await createHousehold({
+      await createHouseholdMutation.mutateAsync({
         name: trimmedName,
         ownerId: userId,
       });
 
       setHouseholdName('');
-      onSuccess();
       onClose();
     } catch (error: any) {
       console.error('Error creating household:', error);
       Alert.alert('Error', error.message || 'Failed to create household');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -147,6 +142,8 @@ export function CreateHouseholdModal({
     setHouseholdName('');
     onClose();
   };
+
+  const loading = createHouseholdMutation.isPending;
 
   return (
     <Modal

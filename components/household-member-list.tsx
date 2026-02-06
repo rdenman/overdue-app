@@ -7,10 +7,9 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
-import { getUserProfile } from '@/lib/services/user-service';
+import { useUserProfiles } from '@/lib/hooks/use-users';
 import { HouseholdMember } from '@/lib/types/household';
-import { User } from '@/lib/types/user';
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,10 +17,6 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-
-interface MemberWithUser extends HouseholdMember {
-  user?: User;
-}
 
 interface HouseholdMemberListProps {
   members: HouseholdMember[];
@@ -38,8 +33,6 @@ export function HouseholdMemberList({
   householdOwnerId,
   onRemoveMember,
 }: HouseholdMemberListProps) {
-  const [membersWithUsers, setMembersWithUsers] = useState<MemberWithUser[]>([]);
-  const [loading, setLoading] = useState(true);
   const [removingUserId, setRemovingUserId] = useState<string | null>(null);
 
   const borderColor = useThemeColor({}, 'border');
@@ -47,32 +40,19 @@ export function HouseholdMemberList({
   const badgeBgColor = useThemeColor({}, 'badgeBackground');
   const badgeTextColor = useThemeColor({}, 'badgeText');
 
-  useEffect(() => {
-    const loadMemberUsers = async () => {
-      try {
-        setLoading(true);
-        const membersWithUserData: MemberWithUser[] = [];
+  const userIds = useMemo(() => members.map((m) => m.userId), [members]);
+  const { profiles, isLoading: loading } = useUserProfiles(userIds);
 
-        for (const member of members) {
-          const user = await getUserProfile(member.userId);
-          membersWithUserData.push({
-            ...member,
-            user: user || undefined,
-          });
-        }
+  const membersWithUsers = useMemo(
+    () =>
+      members.map((member, index) => ({
+        ...member,
+        user: profiles[index] ?? undefined,
+      })),
+    [members, profiles]
+  );
 
-        setMembersWithUsers(membersWithUserData);
-      } catch (error) {
-        console.error('Error loading member users:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMemberUsers();
-  }, [members]);
-
-  const handleRemoveMember = (member: MemberWithUser) => {
+  const handleRemoveMember = (member: (typeof membersWithUsers)[number]) => {
     const isSelf = member.userId === currentUserId;
     const memberName = member.user?.displayName || member.userId;
 

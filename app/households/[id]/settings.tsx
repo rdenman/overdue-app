@@ -8,20 +8,18 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/lib/hooks/use-auth';
-import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import {
-  deleteHousehold,
-  getHousehold,
-  getHouseholdMember,
-  getHouseholdMembers,
-  removeHouseholdMember,
-  updateHousehold,
-} from '@/lib/services/household-service';
-import { deleteInvite, getInvitesForHousehold } from '@/lib/services/invite-service';
-import { Household, HouseholdMember } from '@/lib/types/household';
-import { HouseholdInvite } from '@/lib/types/invite';
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+  useCurrentUserMembership,
+  useDeleteHousehold,
+  useHousehold,
+  useHouseholdMembers,
+  useRemoveHouseholdMember,
+  useUpdateHousehold,
+} from '@/lib/hooks/use-households';
+import { useDeleteInvite, useHouseholdInvites } from '@/lib/hooks/use-invites';
+import { useThemeColor } from '@/lib/hooks/use-theme-color';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -48,54 +46,31 @@ export default function HouseholdSettingsScreen() {
   const inputBg = useThemeColor({}, 'cardBackground');
   const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
 
-  const [household, setHousehold] = useState<Household | null>(null);
-  const [members, setMembers] = useState<HouseholdMember[]>([]);
-  const [invites, setInvites] = useState<HouseholdInvite[]>([]);
-  const [currentUserMember, setCurrentUserMember] = useState<HouseholdMember | null>(null);
-  const [loading, setLoading] = useState(true);
+  // ── Queries ──
+  const { data: household, isLoading: loadingHousehold } = useHousehold(id);
+  const { data: members = [], isLoading: loadingMembers } = useHouseholdMembers(id);
+  const { data: currentUserMember, isLoading: loadingMember } = useCurrentUserMembership(id, user?.uid);
+  const { data: allInvites = [], isLoading: loadingInvites } = useHouseholdInvites(id);
+
+  const invites = useMemo(
+    () => allInvites.filter((inv) => inv.status === 'pending'),
+    [allInvites]
+  );
+
+  const loading = loadingHousehold || loadingMembers || loadingMember || loadingInvites;
+
+  // ── Mutations ──
+  const updateHouseholdMutation = useUpdateHousehold(id ?? '');
+  const deleteHouseholdMutation = useDeleteHousehold();
+  const removeMemberMutation = useRemoveHouseholdMember(id ?? '');
+  const deleteInviteMutation = useDeleteInvite(id ?? '');
+
+  // ── Local UI state ──
   const [editingName, setEditingName] = useState(false);
   const [householdName, setHouseholdName] = useState('');
-  const [savingName, setSavingName] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const isAdmin = currentUserMember?.role === 'admin';
   const isOwner = household?.ownerId === user?.uid;
-
-  const loadData = useCallback(async () => {
-    if (!id || !user) return;
-
-    try {
-      setLoading(true);
-      const [householdData, membersData, memberData, invitesData] = await Promise.all([
-        getHousehold(id),
-        getHouseholdMembers(id),
-        getHouseholdMember(id, user.uid),
-        getInvitesForHousehold(id),
-      ]);
-
-      setHousehold(householdData);
-      setMembers(membersData);
-      setCurrentUserMember(memberData);
-      setInvites(invitesData.filter((inv) => inv.status === 'pending'));
-      setHouseholdName(householdData?.name || '');
-    } catch (error: any) {
-      console.error('Error loading household:', error);
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [id, user]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Reload data when screen comes back into focus (e.g., after sending an invite)
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
 
   const handleSaveName = async () => {
     if (!household || !id) return;
@@ -113,14 +88,10 @@ export default function HouseholdSettingsScreen() {
     }
 
     try {
-      setSavingName(true);
-      await updateHousehold(id, { name: trimmedName });
-      setHousehold({ ...household, name: trimmedName });
+      await updateHouseholdMutation.mutateAsync({ name: trimmedName });
       setEditingName(false);
-    } catch (error: any) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setSavingName(false);
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
     }
   };
 
@@ -128,17 +99,17 @@ export default function HouseholdSettingsScreen() {
     if (!id || !user) return;
 
     try {
-      await removeHouseholdMember(id, userId, user.uid);
-      
+      await removeMemberMutation.mutateAsync({
+        userId,
+        requestingUserId: user.uid,
+      });
+
       // If user removed themselves, go back
       if (userId === user.uid) {
         router.back();
-      } else {
-        // Reload members
-        await loadData();
       }
-    } catch (error: any) {
-      throw error;
+    } catch (err: any) {
+      throw err;
     }
   };
 
@@ -155,12 +126,13 @@ export default function HouseholdSettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              setDeleting(true);
-              await deleteHousehold(id, user.uid);
+              await deleteHouseholdMutation.mutateAsync({
+                householdId: id,
+                userId: user.uid,
+              });
               router.back();
-            } catch (error: any) {
-              setDeleting(false);
-              Alert.alert('Error', error.message);
+            } catch (err: any) {
+              Alert.alert('Error', err.message);
             }
           },
         },
@@ -172,10 +144,9 @@ export default function HouseholdSettingsScreen() {
     if (!user) return;
 
     try {
-      await deleteInvite(inviteId, user.uid);
-      await loadData();
-    } catch (error: any) {
-      Alert.alert('Error', error.message);
+      await deleteInviteMutation.mutateAsync({ inviteId, userId: user.uid });
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
     }
   };
 
@@ -251,7 +222,7 @@ export default function HouseholdSettingsScreen() {
                   onChangeText={setHouseholdName}
                   autoFocus
                   maxLength={50}
-                  editable={!savingName}
+                  editable={!updateHouseholdMutation.isPending}
                 />
                 <View style={styles.buttonRow}>
                   <Pressable
@@ -260,16 +231,16 @@ export default function HouseholdSettingsScreen() {
                       setEditingName(false);
                       setHouseholdName(household.name);
                     }}
-                    disabled={savingName}
+                    disabled={updateHouseholdMutation.isPending}
                   >
                     <ThemedText>Cancel</ThemedText>
                   </Pressable>
                   <Pressable
                     style={[styles.smallButton, { backgroundColor: tintColor }]}
                     onPress={handleSaveName}
-                    disabled={savingName}
+                    disabled={updateHouseholdMutation.isPending}
                   >
-                  {savingName ? (
+                  {updateHouseholdMutation.isPending ? (
                     <ActivityIndicator size="small" color={buttonTextColor} />
                   ) : (
                     <Text style={[styles.buttonText, { color: buttonTextColor }]}>Save</Text>
@@ -281,7 +252,10 @@ export default function HouseholdSettingsScreen() {
               <View style={styles.nameRow}>
                 <ThemedText type="subtitle">{household.name}</ThemedText>
                 {isAdmin && (
-                  <Pressable onPress={() => setEditingName(true)}>
+                  <Pressable onPress={() => {
+                    setHouseholdName(household.name);
+                    setEditingName(true);
+                  }}>
                     <ThemedText style={[styles.editLink, { color: tintColor }]}>Edit</ThemedText>
                   </Pressable>
                 )}
@@ -346,11 +320,11 @@ export default function HouseholdSettingsScreen() {
 
             {isOwner && (
               <Pressable
-                style={[styles.button, styles.dangerButton, { backgroundColor: errorColor, opacity: deleting ? 0.6 : 1 }]}
+                style={[styles.button, styles.dangerButton, { backgroundColor: errorColor, opacity: deleteHouseholdMutation.isPending ? 0.6 : 1 }]}
                 onPress={handleDeleteHousehold}
-                disabled={deleting}
+                disabled={deleteHouseholdMutation.isPending}
               >
-                {deleting ? (
+                {deleteHouseholdMutation.isPending ? (
                   <View style={styles.buttonLoadingRow}>
                     <ActivityIndicator size="small" color="#fff" />
                     <Text style={[styles.buttonText, { color: '#fff', marginLeft: 8 }]}>Deleting...</Text>
