@@ -46,7 +46,7 @@ export default function HouseholdsScreen() {
   const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
 
   const handleHouseholdPress = (householdId: string) => {
-    router.push(`/households/${householdId}/settings`);
+    router.push(`/households/${householdId}/chores`);
   };
 
   return (
@@ -87,7 +87,7 @@ export default function HouseholdsScreen() {
           <View style={styles.emptyState}>
             <ThemedText type="subtitle">No households yet</ThemedText>
             <ThemedText style={styles.emptyMessage}>
-              Household creation will be available in Phase 2.
+              Create a household to start tracking chores.
             </ThemedText>
           </View>
         ) : (
@@ -116,7 +116,7 @@ export default function HouseholdsScreen() {
                     Created: {household.createdAt.toDate().toLocaleDateString()}
                   </ThemedText>
                   <ThemedText style={styles.householdDetail}>
-                    Tap to view settings
+                    Tap to view chores
                   </ThemedText>
                 </ThemedView>
               </Pressable>

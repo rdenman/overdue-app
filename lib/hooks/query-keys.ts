@@ -11,6 +11,12 @@ export const queryKeys = {
     member: (householdId: string, userId: string) =>
       ['households', 'member', householdId, userId] as const,
   },
+  chores: {
+    household: (householdId: string) =>
+      ['chores', 'household', householdId] as const,
+    detail: (choreId: string) => ['chores', 'detail', choreId] as const,
+    today: (userId: string) => ['chores', 'today', userId] as const,
+  },
   invites: {
     pending: (email: string) => ['invites', 'pending', email] as const,
     forHousehold: (householdId: string) =>

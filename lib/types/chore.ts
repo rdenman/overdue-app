@@ -20,6 +20,7 @@ export interface Interval {
 export interface Completion {
   completedAt: Timestamp;
   completedBy: string;
+  previousDueAt: Timestamp; // For undo: restores dueAt to this value
 }
 
 export interface Chore {

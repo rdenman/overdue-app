@@ -64,6 +64,7 @@ export interface ChoreDocument {
   lastCompletion?: {
     completedAt: Timestamp;
     completedBy: string;
+    previousDueAt: Timestamp;
   };
 }
 

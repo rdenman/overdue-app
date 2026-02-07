@@ -112,20 +112,23 @@ export const householdMemberConverter: FirestoreDataConverter<HouseholdMember> =
  */
 export const choreConverter: FirestoreDataConverter<Chore> = {
   toFirestore(chore: Chore): DocumentData {
-    return {
+    const data: DocumentData = {
       id: chore.id,
       householdId: chore.householdId,
       name: chore.name,
-      description: chore.description,
-      assignedTo: chore.assignedTo,
       createdBy: chore.createdBy,
       createdAt: chore.createdAt,
       updatedAt: chore.updatedAt,
       interval: chore.interval,
       dueAt: chore.dueAt,
       isOverdue: chore.isOverdue,
-      lastCompletion: chore.lastCompletion,
     };
+
+    if (chore.description !== undefined) data.description = chore.description;
+    if (chore.assignedTo !== undefined) data.assignedTo = chore.assignedTo;
+    if (chore.lastCompletion !== undefined) data.lastCompletion = chore.lastCompletion;
+
+    return data;
   },
   fromFirestore(
     snapshot: QueryDocumentSnapshot,
