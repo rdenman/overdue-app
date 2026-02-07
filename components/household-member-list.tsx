@@ -11,6 +11,7 @@ import { useUserProfiles } from '@/lib/hooks/use-users';
 import { HouseholdMember } from '@/lib/types/household';
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/chip';
 import {
   ActivityIndicator,
   Alert,
@@ -36,8 +37,6 @@ export function HouseholdMemberList({
   const [removingUserId, setRemovingUserId] = useState<string | null>(null);
 
   const borderColor = useThemeColor({}, 'border');
-  const badgeBgColor = useThemeColor({}, 'badgeBackground');
-  const badgeTextColor = useThemeColor({}, 'badgeText');
 
   const userIds = useMemo(() => members.map((m) => m.userId), [members]);
   const { profiles, isLoading: loading } = useUserProfiles(userIds);
@@ -114,11 +113,11 @@ export function HouseholdMemberList({
                   {member.user?.displayName || 'Unknown User'}
                   {isSelf && <ThemedText style={styles.youLabel}> (You)</ThemedText>}
                 </ThemedText>
-                <View style={[styles.roleBadge, { backgroundColor: badgeBgColor }]}>
-                  <ThemedText style={[styles.roleText, { color: badgeTextColor }]}>
-                    {member.role === 'admin' ? 'Admin' : 'Member'}
-                  </ThemedText>
-                </View>
+                <Chip
+                  label={member.role === 'admin' ? 'Admin' : 'Member'}
+                  selected
+                  size="sm"
+                />
               </View>
               <ThemedText style={styles.memberEmail}>{member.user?.email}</ThemedText>
               <ThemedText style={styles.memberDetail}>
@@ -184,15 +183,6 @@ const styles = StyleSheet.create({
   youLabel: {
     fontWeight: '400',
     opacity: 0.7,
-  },
-  roleBadge: {
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 4,
-  },
-  roleText: {
-    fontSize: 10,
-    fontWeight: '600',
   },
   memberEmail: {
     fontSize: 13,

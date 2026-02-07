@@ -5,6 +5,7 @@
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Chip } from '@/components/ui/chip';
 import { Colors } from '@/constants/theme';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { isChoreOverdue } from '@/lib/services/chore-service';
@@ -122,11 +123,13 @@ export function ChoreCard({
 
           {/* Overdue badge */}
           {overdue && !completed && (
-            <View style={[styles.badge, { backgroundColor: errorColor }]}>
-              <ThemedText style={styles.badgeText} lightColor="#fff" darkColor="#fff">
-                Overdue
-              </ThemedText>
-            </View>
+            <Chip
+              label="Overdue"
+              selected
+              color="danger"
+              size="sm"
+              style={{ marginLeft: 8 }}
+            />
           )}
         </View>
       </ThemedView>
@@ -188,15 +191,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     opacity: 0.6,
     marginLeft: 4,
-  },
-  badge: {
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    marginLeft: 8,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
   },
 });

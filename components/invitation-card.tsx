@@ -10,6 +10,7 @@ import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { InviteWithHouseholdInfo } from '@/lib/types/invite';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/chip';
 import {
   StyleSheet,
   View,
@@ -26,8 +27,6 @@ export function InvitationCard({ invite, onAccept, onDecline }: InvitationCardPr
   const [declining, setDeclining] = useState(false);
 
   const borderColor = useThemeColor({}, 'border');
-  const badgeBgColor = useThemeColor({}, 'badgeBackground');
-  const badgeTextColor = useThemeColor({}, 'badgeText');
 
   const handleAccept = async () => {
     try {
@@ -66,11 +65,11 @@ export function InvitationCard({ invite, onAccept, onDecline }: InvitationCardPr
         <ThemedText type="defaultSemiBold" style={styles.householdName}>
           {invite.householdName || 'Unknown Household'}
         </ThemedText>
-        <View style={[styles.roleBadge, { backgroundColor: badgeBgColor }]}>
-          <ThemedText style={[styles.roleText, { color: badgeTextColor }]}>
-            {invite.role === 'admin' ? 'Admin' : 'Member'}
-          </ThemedText>
-        </View>
+        <Chip
+          label={invite.role === 'admin' ? 'Admin' : 'Member'}
+          selected
+          size="sm"
+        />
       </View>
 
       <View style={styles.details}>
@@ -120,16 +119,6 @@ const styles = StyleSheet.create({
   householdName: {
     fontSize: 18,
     flex: 1,
-  },
-  roleBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    marginLeft: 8,
-  },
-  roleText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   details: {
     marginBottom: 16,

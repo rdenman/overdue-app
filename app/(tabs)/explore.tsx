@@ -6,6 +6,8 @@
 import { CreateHouseholdModal } from '@/components/create-household-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/chip';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useUserHouseholds } from '@/lib/hooks/use-households';
@@ -13,7 +15,6 @@ import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   ActivityIndicator,
   Pressable,
@@ -29,8 +30,6 @@ export default function HouseholdsScreen() {
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const errorColor = useThemeColor({}, 'error');
-  const badgeBgColor = useThemeColor({}, 'badgeBackground');
-  const badgeTextColor = useThemeColor({}, 'badgeText');
   const tintColor = useThemeColor({}, 'tint');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -101,11 +100,11 @@ export default function HouseholdsScreen() {
                     <ThemedText type="defaultSemiBold" style={styles.householdName}>
                       {household.name}
                     </ThemedText>
-                    <View style={[styles.ownerBadge, { backgroundColor: badgeBgColor }]}>
-                      <ThemedText style={[styles.ownerText, { color: badgeTextColor }]}>
-                        {household.ownerId === user?.uid ? 'Owner' : 'Member'}
-                      </ThemedText>
-                    </View>
+                    <Chip
+                      label={household.ownerId === user?.uid ? 'Owner' : 'Member'}
+                      selected
+                      size="sm"
+                    />
                   </View>
                   <ThemedText style={styles.householdDetail}>
                     Created: {household.createdAt.toDate().toLocaleDateString()}
@@ -195,15 +194,6 @@ const styles = StyleSheet.create({
   },
   householdName: {
     fontSize: 18,
-  },
-  ownerBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  ownerText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   householdDetail: {
     fontSize: 12,

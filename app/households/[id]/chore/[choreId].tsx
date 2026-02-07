@@ -6,6 +6,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/chip';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/lib/hooks/use-auth';
 import {
@@ -29,12 +30,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 
@@ -53,17 +51,14 @@ export default function ChoreDetailScreen() {
   }>();
   const { user } = useAuth();
   const router = useRouter();
-  const colorScheme = useColorScheme();
   const headerHeight = useHeaderHeight();
 
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const tintColor = useThemeColor({}, 'tint');
   const errorColor = useThemeColor({}, 'error');
-  const successColor = useThemeColor({}, 'success');
   const textColor = useThemeColor({}, 'text');
   const inputBg = useThemeColor({}, 'cardBackground');
-  const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
 
   const { data: chore, isLoading } = useChore(choreId);
   const { data: members = [] } = useHouseholdMembers(householdId);
@@ -252,8 +247,6 @@ export default function ChoreDetailScreen() {
               inputBg={inputBg}
               borderColor={borderColor}
               textColor={textColor}
-              tintColor={tintColor}
-              buttonTextColor={buttonTextColor}
               onSave={handleSave}
               onCancel={() => setEditing(false)}
               saving={updateMutation.isPending}
@@ -336,8 +329,6 @@ function EditForm(props: {
   inputBg: string;
   borderColor: string;
   textColor: string;
-  tintColor: string;
-  buttonTextColor: string;
   onSave: () => void;
   onCancel: () => void;
   saving: boolean;
@@ -346,7 +337,7 @@ function EditForm(props: {
     name, setName, description, setDescription,
     intervalType, setIntervalType, intervalValue, setIntervalValue,
     assignedTo, setAssignedTo, members, profiles,
-    inputBg, borderColor, textColor, tintColor, buttonTextColor,
+    inputBg, borderColor, textColor,
     onSave, onCancel, saving,
   } = props;
 
@@ -369,20 +360,14 @@ function EditForm(props: {
         multiline
       />
       <View style={styles.chips}>
-        {(['daily', 'weekly', 'monthly', 'yearly', 'custom'] as IntervalType[]).map((t) => {
-          const sel = t === intervalType;
-          return (
-            <Pressable
-              key={t}
-              style={[styles.chip, { borderColor }, sel && { backgroundColor: tintColor, borderColor: tintColor }]}
-              onPress={() => { setIntervalType(t); setIntervalValue('1'); }}
-            >
-              <Text style={[styles.chipText, { color: textColor }, sel && { color: buttonTextColor }]}>
-                {INTERVAL_LABELS[t]}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {(['daily', 'weekly', 'monthly', 'yearly', 'custom'] as IntervalType[]).map((t) => (
+          <Chip
+            key={t}
+            label={INTERVAL_LABELS[t]}
+            selected={t === intervalType}
+            onPress={() => { setIntervalType(t); setIntervalValue('1'); }}
+          />
+        ))}
       </View>
       {(intervalType === 'monthly' || intervalType === 'yearly' || intervalType === 'custom') && (
         <TextInput
@@ -394,26 +379,19 @@ function EditForm(props: {
         />
       )}
       <View style={styles.chips}>
-        <Pressable
-          style={[styles.chip, { borderColor }, !assignedTo && { backgroundColor: tintColor, borderColor: tintColor }]}
+        <Chip
+          label="Anyone"
+          selected={!assignedTo}
           onPress={() => setAssignedTo(undefined)}
-        >
-          <Text style={[styles.chipText, { color: textColor }, !assignedTo && { color: buttonTextColor }]}>Anyone</Text>
-        </Pressable>
-        {members.map((m, i) => {
-          const sel = assignedTo === m.userId;
-          return (
-            <Pressable
-              key={m.userId}
-              style={[styles.chip, { borderColor }, sel && { backgroundColor: tintColor, borderColor: tintColor }]}
-              onPress={() => setAssignedTo(m.userId)}
-            >
-              <Text style={[styles.chipText, { color: textColor }, sel && { color: buttonTextColor }]}>
-                {profiles[i]?.displayName ?? 'User'}
-              </Text>
-            </Pressable>
-          );
-        })}
+        />
+        {members.map((m, i) => (
+          <Chip
+            key={m.userId}
+            label={profiles[i]?.displayName ?? 'User'}
+            selected={assignedTo === m.userId}
+            onPress={() => setAssignedTo(m.userId)}
+          />
+        ))}
       </View>
       <View style={styles.actionRow}>
         <Button
@@ -452,12 +430,5 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 16 },
   textArea: { minHeight: 70, textAlignVertical: 'top' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  chipText: { fontSize: 14, fontWeight: '500' },
   valueInput: { width: 70, textAlign: 'center' },
 });

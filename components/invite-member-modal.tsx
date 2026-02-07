@@ -5,13 +5,14 @@
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/chip';
 import { Colors } from '@/constants/theme';
 import { useCreateInvite } from '@/lib/hooks/use-invites';
 import { useNetworkStatus } from '@/lib/hooks/use-network-status';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { HouseholdRole } from '@/lib/types/household';
 import React, { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   Alert,
   Animated,
@@ -19,11 +20,8 @@ import {
   Keyboard,
   Modal,
   Platform,
-  Pressable,
   StyleSheet,
-  Text,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 
@@ -49,14 +47,11 @@ export function InviteMemberModal({
 
   const createInviteMutation = useCreateInvite(householdId);
 
-  const colorScheme = useColorScheme();
   const { isOnline } = useNetworkStatus();
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
-  const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
   const inputBg = useThemeColor({}, 'cardBackground');
-  const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
 
   // Handle keyboard show/hide with smooth animation
   useEffect(() => {
@@ -217,44 +212,20 @@ export function InviteMemberModal({
 
           <ThemedText style={styles.label}>Role</ThemedText>
           <View style={styles.roleContainer}>
-            <Pressable
-              style={[
-                styles.roleButton,
-                { borderColor },
-                role === 'member' && { backgroundColor: tintColor, borderColor: tintColor },
-              ]}
+            <Chip
+              label="Member"
+              selected={role === 'member'}
               onPress={() => setRole('member')}
               disabled={loading}
-            >
-              <Text
-                style={[
-                  styles.roleButtonText,
-                  { color: textColor },
-                  role === 'member' && { color: buttonTextColor },
-                ]}
-              >
-                Member
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.roleButton,
-                { borderColor },
-                role === 'admin' && { backgroundColor: tintColor, borderColor: tintColor },
-              ]}
+              style={{ flex: 1 }}
+            />
+            <Chip
+              label="Admin"
+              selected={role === 'admin'}
               onPress={() => setRole('admin')}
               disabled={loading}
-            >
-              <Text
-                style={[
-                  styles.roleButtonText,
-                  { color: textColor },
-                  role === 'admin' && { color: buttonTextColor },
-                ]}
-              >
-                Admin
-              </Text>
-            </Pressable>
+              style={{ flex: 1 }}
+            />
           </View>
 
           <ThemedText style={styles.helpText}>
@@ -335,17 +306,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginBottom: 8,
-  },
-  roleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  roleButtonText: {
-    fontWeight: '600',
   },
   helpText: {
     fontSize: 12,

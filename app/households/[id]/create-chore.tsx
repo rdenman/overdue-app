@@ -16,16 +16,14 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/chip';
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 
@@ -41,15 +39,12 @@ export default function CreateChoreScreen() {
   const { id: householdId } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const router = useRouter();
-  const colorScheme = useColorScheme();
   const headerHeight = useHeaderHeight();
 
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
-  const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
   const inputBg = useThemeColor({}, 'cardBackground');
-  const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
 
   const createMutation = useCreateChore(householdId ?? '');
   const { data: members = [] } = useHouseholdMembers(householdId);
@@ -154,33 +149,17 @@ export default function CreateChoreScreen() {
               Repeat
             </ThemedText>
             <View style={styles.chips}>
-              {INTERVAL_OPTIONS.map((opt) => {
-                const selected = opt.type === intervalType;
-                return (
-                  <Pressable
-                    key={opt.type}
-                    style={[
-                      styles.chip,
-                      { borderColor },
-                      selected && { backgroundColor: tintColor, borderColor: tintColor },
-                    ]}
-                    onPress={() => {
-                      setIntervalType(opt.type);
-                      setIntervalValue(String(opt.defaultValue));
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        { color: textColor },
-                        selected && { color: buttonTextColor },
-                      ]}
-                    >
-                      {opt.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              {INTERVAL_OPTIONS.map((opt) => (
+                <Chip
+                  key={opt.type}
+                  label={opt.label}
+                  selected={opt.type === intervalType}
+                  onPress={() => {
+                    setIntervalType(opt.type);
+                    setIntervalValue(String(opt.defaultValue));
+                  }}
+                />
+              ))}
             </View>
           </View>
 
@@ -234,49 +213,19 @@ export default function CreateChoreScreen() {
               Assign to
             </ThemedText>
             <View style={styles.chips}>
-              <Pressable
-                style={[
-                  styles.chip,
-                  { borderColor },
-                  !assignedTo && { backgroundColor: tintColor, borderColor: tintColor },
-                ]}
+              <Chip
+                label="Anyone"
+                selected={!assignedTo}
                 onPress={() => setAssignedTo(undefined)}
-              >
-                <Text
-                  style={[
-                    styles.chipText,
-                    { color: textColor },
-                    !assignedTo && { color: buttonTextColor },
-                  ]}
-                >
-                  Anyone
-                </Text>
-              </Pressable>
-              {members.map((member, idx) => {
-                const profile = profiles[idx];
-                const selected = assignedTo === member.userId;
-                return (
-                  <Pressable
-                    key={member.userId}
-                    style={[
-                      styles.chip,
-                      { borderColor },
-                      selected && { backgroundColor: tintColor, borderColor: tintColor },
-                    ]}
-                    onPress={() => setAssignedTo(member.userId)}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        { color: textColor },
-                        selected && { color: buttonTextColor },
-                      ]}
-                    >
-                      {profile?.displayName ?? 'User'}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              />
+              {members.map((member, idx) => (
+                <Chip
+                  key={member.userId}
+                  label={profiles[idx]?.displayName ?? 'User'}
+                  selected={assignedTo === member.userId}
+                  onPress={() => setAssignedTo(member.userId)}
+                />
+              ))}
             </View>
           </View>
 
@@ -311,13 +260,6 @@ const styles = StyleSheet.create({
   },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  chipText: { fontSize: 14, fontWeight: '500' },
   valueRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   valueInput: { width: 70, textAlign: 'center' },
   valueUnit: { fontSize: 16, opacity: 0.7 },
