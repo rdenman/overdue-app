@@ -9,12 +9,9 @@ import { Colors } from '@/constants/theme';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { InviteWithHouseholdInfo } from '@/lib/types/invite';
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
-  ActivityIndicator,
-  Pressable,
   StyleSheet,
-  Text,
-  useColorScheme,
   View,
 } from 'react-native';
 
@@ -28,13 +25,9 @@ export function InvitationCard({ invite, onAccept, onDecline }: InvitationCardPr
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
 
-  const colorScheme = useColorScheme();
   const borderColor = useThemeColor({}, 'border');
-  const tintColor = useThemeColor({}, 'tint');
-  const errorColor = useThemeColor({}, 'error');
   const badgeBgColor = useThemeColor({}, 'badgeBackground');
   const badgeTextColor = useThemeColor({}, 'badgeText');
-  const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
 
   const handleAccept = async () => {
     try {
@@ -90,41 +83,22 @@ export function InvitationCard({ invite, onAccept, onDecline }: InvitationCardPr
       </View>
 
       <View style={styles.actions}>
-        <Pressable
-          style={[
-            styles.button,
-            styles.declineButton,
-            { borderColor: errorColor },
-            isLoading && styles.buttonDisabled,
-          ]}
+        <Button
+          title="Decline"
+          variant="outlined"
+          color="danger"
           onPress={handleDecline}
+          loading={declining}
           disabled={isLoading}
-        >
-          {declining ? (
-            <ActivityIndicator size="small" color={errorColor} />
-          ) : (
-            <ThemedText style={[styles.declineButtonText, { color: errorColor }]}>
-              Decline
-            </ThemedText>
-          )}
-        </Pressable>
-
-        <Pressable
-          style={[
-            styles.button,
-            styles.acceptButton,
-            { backgroundColor: tintColor },
-            isLoading && styles.buttonDisabled,
-          ]}
+          style={{ flex: 1 }}
+        />
+        <Button
+          title="Accept"
           onPress={handleAccept}
+          loading={accepting}
           disabled={isLoading}
-        >
-          {accepting ? (
-            <ActivityIndicator size="small" color={buttonTextColor} />
-          ) : (
-            <Text style={[styles.acceptButtonText, { color: buttonTextColor }]}>Accept</Text>
-          )}
-        </Pressable>
+          style={{ flex: 1 }}
+        />
       </View>
     </ThemedView>
   );
@@ -168,29 +142,5 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: 12,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 40,
-  },
-  declineButton: {
-    borderWidth: 1,
-  },
-  declineButtonText: {
-    fontWeight: '600',
-  },
-  acceptButton: {
-    borderWidth: 0,
-  },
-  acceptButtonText: {
-    fontWeight: '600',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
   },
 });

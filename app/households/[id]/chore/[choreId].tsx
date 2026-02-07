@@ -5,6 +5,7 @@
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/lib/hooks/use-auth';
 import {
@@ -211,27 +212,15 @@ export default function ChoreDetailScreen() {
         >
           <ThemedView style={styles.content}>
           {/* ── Complete / Undo ── */}
-          <Pressable
-            style={[
-              styles.completeButton,
-              completed
-                ? { backgroundColor: successColor }
-                : overdue
-                  ? { backgroundColor: errorColor }
-                  : { backgroundColor: tintColor },
-              (completeMutation.isPending || undoMutation.isPending) && { opacity: 0.6 },
-            ]}
+          <Button
+            title={completed ? 'Undo Completion' : overdue ? 'Complete (Overdue)' : 'Mark Complete'}
             onPress={completed ? handleUndo : handleComplete}
+            color={completed ? 'success' : overdue ? 'danger' : 'primary'}
+            size="lg"
+            loading={completeMutation.isPending || undoMutation.isPending}
             disabled={completeMutation.isPending || undoMutation.isPending}
-          >
-            {completeMutation.isPending || undoMutation.isPending ? (
-              <ActivityIndicator size="small" color={buttonTextColor} />
-            ) : (
-              <Text style={[styles.completeText, { color: buttonTextColor }]}>
-                {completed ? 'Undo Completion' : overdue ? 'Complete (Overdue)' : 'Mark Complete'}
-              </Text>
-            )}
-          </Pressable>
+            style={{ marginBottom: 16 }}
+          />
 
           {completed && chore.lastCompletion && (
             <ThemedView
@@ -288,19 +277,18 @@ export default function ChoreDetailScreen() {
               />
 
               <View style={styles.actionRow}>
-                <Pressable
-                  style={[styles.actionButton, { backgroundColor: tintColor }]}
+                <Button
+                  title="Edit"
                   onPress={startEditing}
-                >
-                  <Text style={[styles.actionButtonText, { color: buttonTextColor }]}>Edit</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.actionButton, { backgroundColor: errorColor }]}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="Delete"
                   onPress={handleDelete}
+                  color="danger"
                   disabled={deleteMutation.isPending}
-                >
-                  <Text style={[styles.actionButtonText, { color: '#fff' }]}>Delete</Text>
-                </Pressable>
+                  style={{ flex: 1 }}
+                />
               </View>
             </View>
           )}
@@ -428,24 +416,20 @@ function EditForm(props: {
         })}
       </View>
       <View style={styles.actionRow}>
-        <Pressable
-          style={[styles.actionButton, { borderColor, borderWidth: 1 }]}
+        <Button
+          title="Cancel"
+          variant="outlined"
           onPress={onCancel}
           disabled={saving}
-        >
-          <ThemedText>Cancel</ThemedText>
-        </Pressable>
-        <Pressable
-          style={[styles.actionButton, { backgroundColor: tintColor, opacity: saving ? 0.6 : 1 }]}
+          style={{ flex: 1 }}
+        />
+        <Button
+          title="Save"
           onPress={onSave}
+          loading={saving}
           disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator size="small" color={buttonTextColor} />
-          ) : (
-            <Text style={[styles.actionButtonText, { color: buttonTextColor }]}>Save</Text>
-          )}
-        </Pressable>
+          style={{ flex: 1 }}
+        />
       </View>
     </View>
   );
@@ -457,13 +441,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: 20 },
-  completeButton: {
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  completeText: { fontWeight: '600', fontSize: 16 },
   completionInfo: { padding: 12, borderRadius: 8, marginBottom: 20 },
   completionLabel: { fontSize: 13, opacity: 0.7, textAlign: 'center' },
   details: { marginTop: 4 },
@@ -471,13 +448,6 @@ const styles = StyleSheet.create({
   detailLabel: { fontSize: 13, opacity: 0.6, marginBottom: 2 },
   detailValue: { fontSize: 16 },
   actionRow: { flexDirection: 'row', gap: 12, marginTop: 20 },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  actionButtonText: { fontWeight: '600', fontSize: 15 },
   editForm: { gap: 14, marginTop: 4 },
   input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 16 },
   textArea: { minHeight: 70, textAlignVertical: 'top' },

@@ -8,8 +8,8 @@ import { ThemedView } from '@/components/themed-view';
 import { resetPassword } from '@/lib/services/auth-service';
 import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -78,17 +78,13 @@ export default function ForgotPasswordScreen() {
               editable={!loading}
             />
 
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+            <Button
+              title="Send Reset Email"
               onPress={handleResetPassword}
+              size="lg"
+              loading={loading}
               disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Send Reset Email</Text>
-              )}
-            </TouchableOpacity>
+            />
 
             <View style={styles.footer}>
               <Link href="/(auth)/sign-in" asChild>
@@ -137,20 +133,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 16,
     backgroundColor: '#fff',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',

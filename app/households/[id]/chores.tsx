@@ -6,6 +6,7 @@
 import { ChoreCard } from '@/components/chore-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/hooks/use-auth';
 import {
   useCompleteChore,
@@ -24,8 +25,6 @@ import {
   FlatList,
   Pressable,
   StyleSheet,
-  Text,
-  useColorScheme,
   View,
 } from 'react-native';
 
@@ -33,11 +32,8 @@ export default function HouseholdChoresScreen() {
   const { id: householdId } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const router = useRouter();
-  const colorScheme = useColorScheme();
-
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
-  const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
 
   const { data: household } = useHousehold(householdId);
   const {
@@ -133,16 +129,14 @@ export default function HouseholdChoresScreen() {
         )}
 
         {/* Floating create button */}
-        <Pressable
-          style={[styles.fab, { backgroundColor: tintColor }]}
+        <Button
+          title="+ New Chore"
           onPress={() =>
             router.push(`/households/${householdId}/create-chore`)
           }
-        >
-          <Text style={[styles.fabText, { color: buttonTextColor }]}>
-            + New Chore
-          </Text>
-        </Pressable>
+          style={styles.fab}
+          textStyle={styles.fabText}
+        />
       </ThemedView>
     </>
   );
@@ -160,7 +154,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 24,
     alignSelf: 'center',
-    paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 28,
     elevation: 4,
@@ -169,5 +162,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
-  fabText: { fontWeight: '700', fontSize: 16 },
+  fabText: { fontWeight: '700' },
 });

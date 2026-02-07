@@ -9,19 +9,16 @@ import { Colors } from '@/constants/theme';
 import { useCreateHousehold } from '@/lib/hooks/use-households';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import React, { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
   Keyboard,
   Modal,
   Platform,
-  Pressable,
   StyleSheet,
-  Text,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 
@@ -42,13 +39,10 @@ export function CreateHouseholdModal({
 
   const createHouseholdMutation = useCreateHousehold();
 
-  const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
-  const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
   const inputBg = useThemeColor({}, 'cardBackground');
-  const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
 
   // Handle keyboard show/hide with smooth animation
   useEffect(() => {
@@ -191,30 +185,20 @@ export function CreateHouseholdModal({
           />
 
           <View style={styles.buttonContainer}>
-            <Pressable
-              style={[styles.button, styles.cancelButton, { borderColor }]}
+            <Button
+              title="Cancel"
+              variant="outlined"
               onPress={handleCancel}
               disabled={loading}
-            >
-              <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.button,
-                styles.createButton,
-                { backgroundColor: tintColor },
-                loading && styles.buttonDisabled,
-              ]}
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Create"
               onPress={handleCreate}
+              loading={loading}
               disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color={buttonTextColor} />
-              ) : (
-                <Text style={[styles.createButtonText, { color: buttonTextColor }]}>Create</Text>
-              )}
-            </Pressable>
+              style={{ flex: 1 }}
+            />
           </View>
           </ThemedView>
         </Animated.View>
@@ -265,29 +249,5 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     gap: 12,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-  cancelButton: {
-    borderWidth: 1,
-  },
-  cancelButtonText: {
-    fontWeight: '600',
-  },
-  createButton: {
-    borderWidth: 0,
-  },
-  createButtonText: {
-    fontWeight: '600',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
   },
 });

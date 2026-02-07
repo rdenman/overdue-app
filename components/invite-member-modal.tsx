@@ -11,8 +11,8 @@ import { useNetworkStatus } from '@/lib/hooks/use-network-status';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { HouseholdRole } from '@/lib/types/household';
 import React, { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
@@ -270,30 +270,20 @@ export function InviteMemberModal({
           )}
 
           <View style={styles.buttonContainer}>
-            <Pressable
-              style={[styles.button, styles.cancelButton, { borderColor }]}
+            <Button
+              title="Cancel"
+              variant="outlined"
               onPress={handleCancel}
               disabled={loading}
-            >
-              <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.button,
-                styles.sendButton,
-                { backgroundColor: tintColor },
-                loading && styles.buttonDisabled,
-              ]}
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Send Invite"
               onPress={handleSendInvite}
+              loading={loading}
               disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color={buttonTextColor} />
-              ) : (
-                <Text style={[styles.sendButtonText, { color: buttonTextColor }]}>Send Invite</Text>
-              )}
-            </Pressable>
+              style={{ flex: 1 }}
+            />
           </View>
           </ThemedView>
         </Animated.View>
@@ -376,29 +366,5 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     gap: 12,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-  cancelButton: {
-    borderWidth: 1,
-  },
-  cancelButtonText: {
-    fontWeight: '600',
-  },
-  sendButton: {
-    borderWidth: 0,
-  },
-  sendButtonText: {
-    fontWeight: '600',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
   },
 });

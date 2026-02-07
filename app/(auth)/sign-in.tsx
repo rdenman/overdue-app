@@ -8,8 +8,8 @@ import { ThemedView } from '@/components/themed-view';
 import { signIn } from '@/lib/services/auth-service';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -86,17 +86,13 @@ export default function SignInScreen() {
               </TouchableOpacity>
             </Link>
 
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+            <Button
+              title="Sign In"
               onPress={handleSignIn}
+              size="lg"
+              loading={loading}
               disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Sign In</Text>
-              )}
-            </TouchableOpacity>
+            />
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Don&apos;t have an account? </Text>
@@ -150,20 +146,6 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     textAlign: 'right',
     marginBottom: 24,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',

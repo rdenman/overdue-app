@@ -13,13 +13,12 @@ import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  useColorScheme,
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,7 +26,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function HouseholdsScreen() {
   const { user } = useAuth();
   const router = useRouter();
-  const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const errorColor = useThemeColor({}, 'error');
@@ -42,8 +40,6 @@ export default function HouseholdsScreen() {
     error,
   } = useUserHouseholds(user?.uid);
 
-  // Button text color: dark text on light tint (dark mode), white text on dark tint (light mode)
-  const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
 
   const handleHouseholdPress = (householdId: string) => {
     router.push(`/households/${householdId}/chores`);
@@ -64,12 +60,11 @@ export default function HouseholdsScreen() {
                 View and manage your households
               </ThemedText>
             </View>
-            <Pressable
-              style={[styles.createButton, { backgroundColor: tintColor }]}
+            <Button
+              title="+ New"
+              size="sm"
               onPress={() => setShowCreateModal(true)}
-            >
-              <Text style={[styles.createButtonText, { color: buttonTextColor }]}>+ New</Text>
-            </Pressable>
+            />
           </View>
         </View>
 
@@ -156,15 +151,6 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 4,
     opacity: 0.7,
-  },
-  createButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  createButtonText: {
-    fontWeight: '600',
-    fontSize: 14,
   },
   content: {
     flex: 1,

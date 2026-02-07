@@ -20,15 +20,13 @@ import { useDeleteInvite, useHouseholdInvites } from '@/lib/hooks/use-invites';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   ActivityIndicator,
   Alert,
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 
@@ -37,14 +35,12 @@ export default function HouseholdSettingsScreen() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const tintColor = useThemeColor({}, 'tint');
   const errorColor = useThemeColor({}, 'error');
   const textColor = useThemeColor({}, 'text');
   const inputBg = useThemeColor({}, 'cardBackground');
-  const buttonTextColor = colorScheme === 'dark' ? '#000' : '#fff';
 
   // ── Queries ──
   const { data: household, isLoading: loadingHousehold } = useHousehold(id);
@@ -183,9 +179,7 @@ export default function HouseholdSettingsScreen() {
             <ThemedText style={[styles.errorText, { color: errorColor }]}>
               Household not found or you don&apos;t have access
             </ThemedText>
-            <Pressable style={[styles.button, { backgroundColor: tintColor }]} onPress={() => router.back()}>
-              <Text style={[styles.buttonText, { color: buttonTextColor }]}>Go Back</Text>
-            </Pressable>
+            <Button title="Go Back" onPress={() => router.back()} />
           </View>
         </View>
       </>
@@ -225,39 +219,38 @@ export default function HouseholdSettingsScreen() {
                   editable={!updateHouseholdMutation.isPending}
                 />
                 <View style={styles.buttonRow}>
-                  <Pressable
-                    style={[styles.smallButton, { borderColor, borderWidth: 1 }]}
+                  <Button
+                    title="Cancel"
+                    variant="outlined"
                     onPress={() => {
                       setEditingName(false);
                       setHouseholdName(household.name);
                     }}
                     disabled={updateHouseholdMutation.isPending}
-                  >
-                    <ThemedText>Cancel</ThemedText>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.smallButton, { backgroundColor: tintColor }]}
+                    style={{ flex: 1 }}
+                  />
+                  <Button
+                    title="Save"
                     onPress={handleSaveName}
+                    loading={updateHouseholdMutation.isPending}
                     disabled={updateHouseholdMutation.isPending}
-                  >
-                  {updateHouseholdMutation.isPending ? (
-                    <ActivityIndicator size="small" color={buttonTextColor} />
-                  ) : (
-                    <Text style={[styles.buttonText, { color: buttonTextColor }]}>Save</Text>
-                  )}
-                  </Pressable>
+                    style={{ flex: 1 }}
+                  />
                 </View>
               </View>
             ) : (
               <View style={styles.nameRow}>
                 <ThemedText type="subtitle">{household.name}</ThemedText>
                 {isAdmin && (
-                  <Pressable onPress={() => {
-                    setHouseholdName(household.name);
-                    setEditingName(true);
-                  }}>
-                    <ThemedText style={[styles.editLink, { color: tintColor }]}>Edit</ThemedText>
-                  </Pressable>
+                  <Button
+                    title="Edit"
+                    variant="ghost"
+                    size="sm"
+                    onPress={() => {
+                      setHouseholdName(household.name);
+                      setEditingName(true);
+                    }}
+                  />
                 )}
               </View>
             )}
@@ -294,14 +287,13 @@ export default function HouseholdSettingsScreen() {
                       Expires: {invite.expiresAt.toDate().toLocaleDateString()}
                     </ThemedText>
                   </View>
-                  <Pressable
-                    style={styles.deleteInviteButton}
+                  <Button
+                    title="Cancel"
+                    variant="ghost"
+                    color="danger"
+                    size="sm"
                     onPress={() => handleDeleteInvite(invite.id)}
-                  >
-                    <ThemedText style={[styles.deleteInviteText, { color: errorColor }]}>
-                      Cancel
-                    </ThemedText>
-                  </Pressable>
+                  />
                 </ThemedView>
               ))}
             </View>
@@ -310,29 +302,24 @@ export default function HouseholdSettingsScreen() {
           {/* Actions Section */}
           <View style={styles.section}>
             {isAdmin && (
-              <Pressable
-                style={[styles.button, { backgroundColor: tintColor }]}
+              <Button
+                title="Invite Member"
+                size="lg"
                 onPress={() => router.push(`/households/${id}/invite`)}
-              >
-                <Text style={[styles.buttonText, { color: buttonTextColor }]}>Invite Member</Text>
-              </Pressable>
+                style={{ marginBottom: 12 }}
+              />
             )}
 
             {isOwner && (
-              <Pressable
-                style={[styles.button, styles.dangerButton, { backgroundColor: errorColor, opacity: deleteHouseholdMutation.isPending ? 0.6 : 1 }]}
+              <Button
+                title={deleteHouseholdMutation.isPending ? 'Deleting...' : 'Delete Household'}
+                color="danger"
+                size="lg"
                 onPress={handleDeleteHousehold}
+                loading={deleteHouseholdMutation.isPending}
                 disabled={deleteHouseholdMutation.isPending}
-              >
-                {deleteHouseholdMutation.isPending ? (
-                  <View style={styles.buttonLoadingRow}>
-                    <ActivityIndicator size="small" color="#fff" />
-                    <Text style={[styles.buttonText, { color: '#fff', marginLeft: 8 }]}>Deleting...</Text>
-                  </View>
-                ) : (
-                  <Text style={[styles.buttonText, { color: '#fff' }]}>Delete Household</Text>
-                )}
-              </Pressable>
+                style={{ marginTop: 8 }}
+              />
             )}
           </View>
         </ThemedView>
@@ -379,10 +366,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  editLink: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
   input: {
     borderWidth: 1,
     borderRadius: 8,
@@ -393,32 +376,6 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     gap: 12,
-  },
-  smallButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  button: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  buttonText: {
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  dangerButton: {
-    marginTop: 8,
-  },
-  buttonLoadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   inviteCard: {
     flexDirection: 'row',
@@ -436,13 +393,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.7,
     marginTop: 2,
-  },
-  deleteInviteButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  deleteInviteText: {
-    fontSize: 13,
-    fontWeight: '600',
   },
 });

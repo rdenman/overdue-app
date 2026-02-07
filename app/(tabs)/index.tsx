@@ -16,12 +16,11 @@ import { Chore } from '@/lib/types/chore';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   ActivityIndicator,
   FlatList,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,8 +30,6 @@ export default function TodayScreen() {
   const router = useRouter();
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
-  const buttonBgColor = useThemeColor({}, 'buttonBackground');
-  const buttonTextColor = useThemeColor({}, 'buttonText');
   const tintColor = useThemeColor({}, 'tint');
 
   const { data: households = [] } = useUserHouseholds(user?.uid);
@@ -113,14 +110,12 @@ export default function TodayScreen() {
               Hello, {user?.displayName || 'there'}!
             </ThemedText>
           </View>
-          <TouchableOpacity
-            style={[styles.signOutButton, { backgroundColor: buttonBgColor }]}
+          <Button
+            title="Sign Out"
+            variant="outlined"
+            size="sm"
             onPress={handleSignOut}
-          >
-            <Text style={[styles.signOutText, { color: buttonTextColor }]}>
-              Sign Out
-            </Text>
-          </TouchableOpacity>
+          />
         </View>
 
         {isLoading ? (
@@ -195,12 +190,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   greeting: { marginTop: 4, opacity: 0.7 },
-  signOutButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  signOutText: { fontSize: 14, fontWeight: '600' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 12, opacity: 0.7 },
   list: { padding: 16, paddingBottom: 40 },

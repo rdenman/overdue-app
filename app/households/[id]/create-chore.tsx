@@ -15,8 +15,8 @@ import { IntervalType } from '@/lib/types/chore';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -281,22 +281,14 @@ export default function CreateChoreScreen() {
           </View>
 
           {/* Submit */}
-          <Pressable
-            style={[
-              styles.submitButton,
-              { backgroundColor: tintColor, opacity: createMutation.isPending ? 0.6 : 1 },
-            ]}
+          <Button
+            title="Create Chore"
             onPress={handleCreate}
+            size="lg"
+            loading={createMutation.isPending}
             disabled={createMutation.isPending}
-          >
-            {createMutation.isPending ? (
-              <ActivityIndicator size="small" color={buttonTextColor} />
-            ) : (
-              <Text style={[styles.submitText, { color: buttonTextColor }]}>
-                Create Chore
-              </Text>
-            )}
-          </Pressable>
+            style={{ marginTop: 12 }}
+          />
           </ThemedView>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -330,11 +322,4 @@ const styles = StyleSheet.create({
   valueInput: { width: 70, textAlign: 'center' },
   valueUnit: { fontSize: 16, opacity: 0.7 },
   preview: { fontSize: 14, opacity: 0.6, fontStyle: 'italic' },
-  submitButton: {
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  submitText: { fontWeight: '600', fontSize: 16 },
 });

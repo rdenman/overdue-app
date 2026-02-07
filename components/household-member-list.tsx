@@ -10,10 +10,10 @@ import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { useUserProfiles } from '@/lib/hooks/use-users';
 import { HouseholdMember } from '@/lib/types/household';
 import React, { useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   ActivityIndicator,
   Alert,
-  Pressable,
   StyleSheet,
   View,
 } from 'react-native';
@@ -36,7 +36,6 @@ export function HouseholdMemberList({
   const [removingUserId, setRemovingUserId] = useState<string | null>(null);
 
   const borderColor = useThemeColor({}, 'border');
-  const errorColor = useThemeColor({}, 'error');
   const badgeBgColor = useThemeColor({}, 'badgeBackground');
   const badgeTextColor = useThemeColor({}, 'badgeText');
 
@@ -128,19 +127,15 @@ export function HouseholdMemberList({
             </View>
 
             {canRemove && (
-              <Pressable
-                style={styles.removeButton}
+              <Button
+                title={isSelf ? 'Leave' : 'Remove'}
+                variant="ghost"
+                color="danger"
+                size="sm"
                 onPress={() => handleRemoveMember(member)}
+                loading={removingUserId === member.userId}
                 disabled={removingUserId === member.userId}
-              >
-                {removingUserId === member.userId ? (
-                  <ActivityIndicator size="small" color={errorColor} />
-                ) : (
-                  <ThemedText style={[styles.removeButtonText, { color: errorColor }]}>
-                    {isSelf ? 'Leave' : 'Remove'}
-                  </ThemedText>
-                )}
-              </Pressable>
+              />
             )}
           </ThemedView>
         );
@@ -207,15 +202,5 @@ const styles = StyleSheet.create({
   memberDetail: {
     fontSize: 12,
     opacity: 0.6,
-  },
-  removeButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  removeButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
   },
 });

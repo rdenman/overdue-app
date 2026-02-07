@@ -10,8 +10,8 @@ import { createDefaultHousehold } from '@/lib/services/household-service';
 import { createUserProfile } from '@/lib/services/user-service';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -142,17 +142,13 @@ export default function SignUpScreen() {
                 editable={!loading}
               />
 
-              <TouchableOpacity
-                style={[styles.button, loading && styles.buttonDisabled]}
+              <Button
+                title="Sign Up"
                 onPress={handleSignUp}
+                size="lg"
+                loading={loading}
                 disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.buttonText}>Sign Up</Text>
-                )}
-              </TouchableOpacity>
+              />
 
               <View style={styles.footer}>
                 <Text style={styles.footerText}>Already have an account? </Text>
@@ -205,21 +201,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 16,
     backgroundColor: '#fff',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',

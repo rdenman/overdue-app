@@ -7,12 +7,11 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { resendVerificationEmail } from '@/lib/services/auth-service';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
-  ActivityIndicator,
   Alert,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,17 +45,16 @@ export function EmailVerificationBanner() {
           <Text style={styles.text}>
             ⚠️ Please verify your email address
           </Text>
-          <TouchableOpacity
-            style={styles.button}
+          <Button
+            title="Resend Email"
+            variant="outlined"
+            size="sm"
             onPress={handleResendEmail}
+            loading={sending}
             disabled={sending}
-          >
-            {sending ? (
-              <ActivityIndicator size="small" color="#007AFF" />
-            ) : (
-              <Text style={styles.buttonText}>Resend Email</Text>
-            )}
-          </TouchableOpacity>
+            style={styles.button}
+            textStyle={styles.buttonText}
+          />
         </View>
       </View>
     </>
@@ -82,18 +80,11 @@ const styles = StyleSheet.create({
     color: '#856404',
   },
   button: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
     backgroundColor: '#fff',
-    borderWidth: 1,
     borderColor: '#FFE69C',
     minWidth: 100,
-    alignItems: 'center',
   },
   buttonText: {
     color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
 });
