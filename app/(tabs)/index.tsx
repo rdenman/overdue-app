@@ -14,7 +14,6 @@ import { useNotificationSettings } from '@/lib/hooks/use-notification-settings';
 import { useUserHouseholds } from '@/lib/hooks/use-households';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { isChoreOverdue } from '@/lib/services/chore-service';
-import { signOut } from '@/lib/services/auth-service';
 import { scheduleAllNotifications } from '@/lib/services/notification-service';
 import { Chore } from '@/lib/types/chore';
 import { Ionicons } from '@expo/vector-icons';
@@ -85,16 +84,6 @@ export default function TodayScreen() {
       });
   }, [allChores]);
 
-  // We need a per-household complete/undo — but since mutations require householdId,
-  // we keep a simple approach: call the service directly and refresh
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error: any) {
-      console.error('Sign out error:', error);
-    }
-  };
-
   const renderChore = useCallback(
     ({ item }: { item: Chore }) => (
       <TodayChoreCard
@@ -130,20 +119,6 @@ export default function TodayScreen() {
               hitSlop={8}
             >
               <Ionicons name="calendar-outline" size={22} color={tintColor} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => router.push('/settings')}
-              style={styles.iconButton}
-              hitSlop={8}
-            >
-              <Ionicons name="settings-outline" size={22} color={tintColor} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSignOut}
-              style={styles.iconButton}
-              hitSlop={8}
-            >
-              <Ionicons name="log-out-outline" size={22} color={tintColor} />
             </TouchableOpacity>
           </View>
         </View>

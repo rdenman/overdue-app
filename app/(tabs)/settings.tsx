@@ -1,6 +1,6 @@
 /**
- * Notification Settings Screen
- * Toggle notifications, daily reminder, chore alerts, and set reminder time
+ * Settings Tab Screen
+ * Notification settings and sign-out
  */
 
 import { ThemedView } from '@/components/themed-view';
@@ -14,10 +14,11 @@ import {
   requestPermissions,
   scheduleAllNotifications,
 } from '@/lib/services/notification-service';
+import { signOut } from '@/lib/services/auth-service';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useTodayChores } from '@/lib/hooks/use-chores';
 import { useUserHouseholds } from '@/lib/hooks/use-households';
-import { Stack } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
@@ -27,6 +28,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TIME_OPTIONS = [
   '06:00', '07:00', '08:00', '09:00', '10:00',
@@ -47,6 +49,7 @@ export default function SettingsScreen() {
   const accentColor = useThemeColor({}, 'badgeBackground');
   const accentTextColor = useThemeColor({}, 'badgeText');
   const textColor = useThemeColor({}, 'text');
+  const dangerColor = useThemeColor({}, 'error');
   const { settings, updateSettings, loading } = useNotificationSettings();
   const [showTimePicker, setShowTimePicker] = useState(false);
 
@@ -109,20 +112,26 @@ export default function SettingsScreen() {
     [updateSettings, resync]
   );
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+    }
+  };
+
   if (loading) {
     return (
-      <>
-        <Stack.Screen options={{ title: 'Settings' }} />
+      <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={[]}>
         <View style={[styles.center, { backgroundColor }]}>
           <LoadingState />
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Settings', headerBackTitle: 'Today' }} />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={[]}>
       <ScrollView
         style={[styles.container, { backgroundColor }]}
         contentContainerStyle={styles.scrollContent}
@@ -217,9 +226,22 @@ export default function SettingsScreen() {
               </Card>
             </>
           )}
+
+          {/* Sign Out */}
+          <View style={styles.signOutSection}>
+            <TouchableOpacity
+              onPress={handleSignOut}
+              style={[styles.signOutButton, { borderColor: dangerColor }]}
+            >
+              <Ionicons name="log-out-outline" size={20} color={dangerColor} />
+              <Typography style={[styles.signOutText, { color: dangerColor }]}>
+                Sign Out
+              </Typography>
+            </TouchableOpacity>
+          </View>
         </ThemedView>
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 }
 
@@ -255,6 +277,7 @@ function SettingRow({
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1 },
   container: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -284,5 +307,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 4,
     borderRadius: 6,
+  },
+  signOutSection: {
+    marginTop: 32,
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  signOutText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
