@@ -1,9 +1,10 @@
 /**
  * Households Screen
- * Shows all households the user belongs to
+ * Shows all households the user belongs to, with pending invites at the top
  */
 
 import { CreateHouseholdModal } from '@/components/create-household-modal';
+import { InvitationCard } from '@/components/invitation-card';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,11 +15,14 @@ import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useAllHouseholdChoreStats } from '@/lib/hooks/use-chores';
 import { useUserHouseholds } from '@/lib/hooks/use-households';
+import { useAcceptInvite, useDeclineInvite, usePendingInvites } from '@/lib/hooks/use-invites';
+import { useNetworkStatus } from '@/lib/hooks/use-network-status';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useMemo, useState } from 'react';
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   View,
@@ -31,6 +35,7 @@ export default function HouseholdsScreen() {
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { isOnline } = useNetworkStatus();
 
   const {
     data: households = [],
@@ -38,11 +43,50 @@ export default function HouseholdsScreen() {
     error,
   } = useUserHouseholds(user?.uid);
 
+  const { data: pendingInvites = [] } = usePendingInvites(user?.email);
+  const acceptMutation = useAcceptInvite(user?.email);
+  const declineMutation = useDeclineInvite(user?.email);
+
   const householdIds = useMemo(() => households.map((h) => h.id), [households]);
   const { statsMap } = useAllHouseholdChoreStats(user?.uid, householdIds);
 
   const handleHouseholdPress = (householdId: string) => {
     router.push(`/households/${householdId}/chores`);
+  };
+
+  const handleAcceptInvite = async (inviteId: string) => {
+    if (!user) return;
+    if (!isOnline) {
+      Alert.alert(
+        'Offline',
+        'You must be online to accept invitations. Please check your connection and try again.'
+      );
+      return;
+    }
+    try {
+      await acceptMutation.mutateAsync({ inviteId, userId: user.uid });
+      Alert.alert('Success', 'You have joined the household!');
+    } catch (err: any) {
+      console.error('Error accepting invite:', err);
+      Alert.alert('Error', err.message || 'Failed to accept invitation');
+    }
+  };
+
+  const handleDeclineInvite = async (inviteId: string) => {
+    if (!isOnline) {
+      Alert.alert(
+        'Offline',
+        'You must be online to decline invitations. Please check your connection and try again.'
+      );
+      return;
+    }
+    try {
+      await declineMutation.mutateAsync(inviteId);
+      Alert.alert('Declined', 'You have declined the invitation');
+    } catch (err: any) {
+      console.error('Error declining invite:', err);
+      Alert.alert('Error', err.message || 'Failed to decline invitation');
+    }
   };
 
   return (
@@ -69,6 +113,23 @@ export default function HouseholdsScreen() {
         </View>
 
         <ScrollView style={styles.content}>
+          {/* Pending Invitations Section */}
+          {pendingInvites.length > 0 && (
+            <View style={styles.invitesSection}>
+              <Typography variant="sectionTitle" style={styles.invitesSectionTitle}>
+                Pending Invitations ({pendingInvites.length})
+              </Typography>
+              {pendingInvites.map((invite) => (
+                <InvitationCard
+                  key={invite.id}
+                  invite={invite}
+                  onAccept={handleAcceptInvite}
+                  onDecline={handleDeclineInvite}
+                />
+              ))}
+            </View>
+          )}
+
           {loading ? (
             <LoadingState message="Loading households..." />
           ) : error ? (
@@ -168,6 +229,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  invitesSection: {
+    padding: 20,
+    paddingBottom: 0,
+  },
+  invitesSectionTitle: {
+    marginBottom: 12,
   },
   errorContainer: {
     padding: 40,
