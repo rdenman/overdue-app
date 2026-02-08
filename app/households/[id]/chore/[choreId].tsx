@@ -3,11 +3,10 @@
  * View chore info, complete/undo, edit fields, and delete
  */
 
+import { ChoreEditForm } from '@/components/chore-edit-form';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Chip } from '@/components/ui/chip';
-import { Input } from '@/components/ui/input';
 import { LoadingState } from '@/components/ui/loading-state';
 import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
@@ -21,7 +20,11 @@ import {
 import { useHouseholdMembers } from '@/lib/hooks/use-households';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { useUserProfiles } from '@/lib/hooks/use-users';
-import { calculateNextDueDate, isChoreOverdue } from '@/lib/services/chore-service';
+import {
+  calculateNextDueDate,
+  getUpcomingDueDates,
+  isChoreOverdue,
+} from '@/lib/services/chore-service';
 import { ChoreUpdateInput, IntervalType } from '@/lib/types/chore';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -63,8 +66,8 @@ export default function ChoreDetailScreen() {
 
   const completeMutation = useCompleteChore(householdId ?? '', user?.uid ?? '');
   const undoMutation = useUndoCompletion(householdId ?? '', user?.uid ?? '');
-  const updateMutation = useUpdateChore(choreId ?? '', householdId ?? '');
-  const deleteMutation = useDeleteChore(householdId ?? '');
+  const updateMutation = useUpdateChore(choreId ?? '', householdId ?? '', user?.uid);
+  const deleteMutation = useDeleteChore(householdId ?? '', user?.uid);
 
   // ── Edit state ──
   const [editing, setEditing] = useState(false);
@@ -91,11 +94,9 @@ export default function ChoreDetailScreen() {
       Alert.alert('Error', 'Chore name is required');
       return;
     }
-
     const parsedValue = Math.max(1, parseInt(editIntervalValue, 10) || 1);
     const intervalChanged =
       editIntervalType !== chore.interval.type || parsedValue !== chore.interval.value;
-
     try {
       const updates: ChoreUpdateInput = {
         name: trimmedName,
@@ -103,8 +104,6 @@ export default function ChoreDetailScreen() {
         assignedTo: editAssignedTo,
         interval: { type: editIntervalType, value: parsedValue },
       };
-
-      // If interval changed, recalculate dueAt forward from now
       if (intervalChanged) {
         const nextDue = calculateNextDueDate(new Date(), {
           type: editIntervalType,
@@ -113,7 +112,6 @@ export default function ChoreDetailScreen() {
         updates.dueAt = Timestamp.fromDate(nextDue);
         updates.isOverdue = false;
       }
-
       await updateMutation.mutateAsync(updates);
       setEditing(false);
     } catch (err: any) {
@@ -123,52 +121,36 @@ export default function ChoreDetailScreen() {
 
   const handleComplete = async () => {
     if (!choreId) return;
-    try {
-      await completeMutation.mutateAsync(choreId);
-    } catch (err: any) {
-      Alert.alert('Error', err.message);
-    }
+    try { await completeMutation.mutateAsync(choreId); }
+    catch (err: any) { Alert.alert('Error', err.message); }
   };
 
   const handleUndo = async () => {
     if (!choreId) return;
-    try {
-      await undoMutation.mutateAsync(choreId);
-    } catch (err: any) {
-      Alert.alert('Error', err.message);
-    }
+    try { await undoMutation.mutateAsync(choreId); }
+    catch (err: any) { Alert.alert('Error', err.message); }
   };
 
   const handleDelete = () => {
     if (!choreId || !chore) return;
-    Alert.alert(
-      'Delete Chore',
-      `Delete "${chore.name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteMutation.mutateAsync(choreId);
-              router.back();
-            } catch (err: any) {
-              Alert.alert('Error', err.message);
-            }
-          },
+    Alert.alert('Delete Chore', `Delete "${chore.name}"? This cannot be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try { await deleteMutation.mutateAsync(choreId); router.back(); }
+          catch (err: any) { Alert.alert('Error', err.message); }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   if (isLoading) {
     return (
       <>
         <Stack.Screen options={{ title: 'Loading...' }} />
-        <View style={[styles.center, { backgroundColor }]}>
-          <LoadingState />
-        </View>
+        <View style={[styles.center, { backgroundColor }]}><LoadingState /></View>
       </>
     );
   }
@@ -202,7 +184,6 @@ export default function ChoreDetailScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           <ThemedView style={styles.content}>
-            {/* ── Complete / Undo ── */}
             <Button
               title={completed ? 'Undo Completion' : overdue ? 'Complete (Overdue)' : 'Mark Complete'}
               onPress={completed ? handleUndo : handleComplete}
@@ -221,9 +202,8 @@ export default function ChoreDetailScreen() {
               </Card>
             )}
 
-            {/* ── View / Edit fields ── */}
             {editing ? (
-              <EditForm
+              <ChoreEditForm
                 name={editName}
                 setName={setEditName}
                 description={editDesc}
@@ -257,13 +237,8 @@ export default function ChoreDetailScreen() {
                   label="Assigned to"
                   value={assigneeProfile?.displayName ?? (chore.assignedTo ? 'User' : 'Anyone')}
                 />
-
                 <View style={styles.actionRow}>
-                  <Button
-                    title="Edit"
-                    onPress={startEditing}
-                    style={{ flex: 1 }}
-                  />
+                  <Button title="Edit" onPress={startEditing} style={{ flex: 1 }} />
                   <Button
                     title="Delete"
                     onPress={handleDelete}
@@ -272,6 +247,7 @@ export default function ChoreDetailScreen() {
                     style={{ flex: 1 }}
                   />
                 </View>
+                <UpcomingSchedule chore={chore} />
               </View>
             )}
           </ThemedView>
@@ -283,113 +259,33 @@ export default function ChoreDetailScreen() {
 
 // ── Sub-components ──
 
-function DetailRow({
-  label,
-  value,
-  valueColor,
-}: {
-  label: string;
-  value: string;
-  valueColor?: string;
-}) {
+function UpcomingSchedule({ chore }: { chore: { dueAt: { toDate: () => Date }; interval: { type: IntervalType; value: number } } }) {
+  const upcoming = useMemo(
+    () => getUpcomingDueDates(chore.dueAt.toDate(), chore.interval, 5),
+    [chore.dueAt, chore.interval]
+  );
   return (
-    <View style={styles.detailRow}>
-      <Typography variant="caption" muted>{label}</Typography>
-      <Typography style={valueColor ? { color: valueColor } : undefined}>
-        {value}
+    <View style={styles.upcomingSection}>
+      <Typography variant="sectionTitle" style={styles.upcomingTitle}>
+        Upcoming Schedule
       </Typography>
+      {upcoming.map((date, i) => (
+        <View key={i} style={styles.upcomingRow}>
+          <Typography muted style={styles.upcomingIdx}>{i + 1}.</Typography>
+          <Typography>
+            {date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+          </Typography>
+        </View>
+      ))}
     </View>
   );
 }
 
-function EditForm(props: {
-  name: string;
-  setName: (v: string) => void;
-  description: string;
-  setDescription: (v: string) => void;
-  intervalType: IntervalType;
-  setIntervalType: (v: IntervalType) => void;
-  intervalValue: string;
-  setIntervalValue: (v: string) => void;
-  assignedTo: string | undefined;
-  setAssignedTo: (v: string | undefined) => void;
-  members: { userId: string }[];
-  profiles: (null | { displayName: string })[];
-  onSave: () => void;
-  onCancel: () => void;
-  saving: boolean;
-}) {
-  const {
-    name, setName, description, setDescription,
-    intervalType, setIntervalType, intervalValue, setIntervalValue,
-    assignedTo, setAssignedTo, members, profiles,
-    onSave, onCancel, saving,
-  } = props;
-
+function DetailRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
   return (
-    <View style={styles.editForm}>
-      <Input
-        value={name}
-        onChangeText={setName}
-        placeholder="Chore name"
-        maxLength={100}
-      />
-      <Input
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Description (optional)"
-        multiline
-      />
-      <View style={styles.chips}>
-        {(['daily', 'weekly', 'monthly', 'yearly', 'custom'] as IntervalType[]).map((t) => (
-          <Chip
-            key={t}
-            label={INTERVAL_LABELS[t]}
-            selected={t === intervalType}
-            onPress={() => { setIntervalType(t); setIntervalValue('1'); }}
-          />
-        ))}
-      </View>
-      {(intervalType === 'monthly' || intervalType === 'yearly' || intervalType === 'custom') && (
-        <Input
-          value={intervalValue}
-          onChangeText={setIntervalValue}
-          keyboardType="number-pad"
-          maxLength={3}
-          style={styles.valueInput}
-        />
-      )}
-      <View style={styles.chips}>
-        <Chip
-          label="Anyone"
-          selected={!assignedTo}
-          onPress={() => setAssignedTo(undefined)}
-        />
-        {members.map((m, i) => (
-          <Chip
-            key={m.userId}
-            label={profiles[i]?.displayName ?? 'User'}
-            selected={assignedTo === m.userId}
-            onPress={() => setAssignedTo(m.userId)}
-          />
-        ))}
-      </View>
-      <View style={styles.actionRow}>
-        <Button
-          title="Cancel"
-          variant="outlined"
-          onPress={onCancel}
-          disabled={saving}
-          style={{ flex: 1 }}
-        />
-        <Button
-          title="Save"
-          onPress={onSave}
-          loading={saving}
-          disabled={saving}
-          style={{ flex: 1 }}
-        />
-      </View>
+    <View style={styles.detailRow}>
+      <Typography variant="caption" muted>{label}</Typography>
+      <Typography style={valueColor ? { color: valueColor } : undefined}>{value}</Typography>
     </View>
   );
 }
@@ -405,7 +301,8 @@ const styles = StyleSheet.create({
   details: { marginTop: 4 },
   detailRow: { marginBottom: 16 },
   actionRow: { flexDirection: 'row', gap: 12, marginTop: 20 },
-  editForm: { gap: 14, marginTop: 4 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  valueInput: { width: 70, textAlign: 'center' },
+  upcomingSection: { marginTop: 28 },
+  upcomingTitle: { marginBottom: 10 },
+  upcomingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  upcomingIdx: { width: 24 },
 });

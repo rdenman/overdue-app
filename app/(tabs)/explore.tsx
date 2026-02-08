@@ -12,11 +12,12 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
 import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useAllHouseholdChoreStats } from '@/lib/hooks/use-chores';
 import { useUserHouseholds } from '@/lib/hooks/use-households';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -36,6 +37,9 @@ export default function HouseholdsScreen() {
     isLoading: loading,
     error,
   } = useUserHouseholds(user?.uid);
+
+  const householdIds = useMemo(() => households.map((h) => h.id), [households]);
+  const { statsMap } = useAllHouseholdChoreStats(user?.uid, householdIds);
 
   const handleHouseholdPress = (householdId: string) => {
     router.push(`/households/${householdId}/chores`);
@@ -95,9 +99,34 @@ export default function HouseholdsScreen() {
                       size="sm"
                     />
                   </View>
-                  <Typography variant="caption" muted style={styles.householdDetail}>
-                    Created: {household.createdAt.toDate().toLocaleDateString()}
-                  </Typography>
+                  {/* Chore stats */}
+                  {statsMap[household.id] && (
+                    <View style={styles.statsRow}>
+                      {statsMap[household.id].overdue > 0 && (
+                        <Chip
+                          label={`${statsMap[household.id].overdue} overdue`}
+                          selected
+                          color="danger"
+                          size="sm"
+                        />
+                      )}
+                      {statsMap[household.id].dueToday > 0 && (
+                        <Chip
+                          label={`${statsMap[household.id].dueToday} due today`}
+                          selected
+                          color="primary"
+                          size="sm"
+                        />
+                      )}
+                      {statsMap[household.id].total > 0 &&
+                        statsMap[household.id].overdue === 0 &&
+                        statsMap[household.id].dueToday === 0 && (
+                          <Typography variant="caption" muted>
+                            {statsMap[household.id].total} chore{statsMap[household.id].total !== 1 ? 's' : ''}
+                          </Typography>
+                        )}
+                    </View>
+                  )}
                   <Typography variant="caption" muted style={styles.householdDetail}>
                     Tap to view chores
                   </Typography>
@@ -161,5 +190,11 @@ const styles = StyleSheet.create({
   },
   householdDetail: {
     marginTop: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 6,
+    alignItems: 'center',
   },
 });

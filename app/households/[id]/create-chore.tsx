@@ -43,7 +43,7 @@ export default function CreateChoreScreen() {
 
   const backgroundColor = useThemeColor({}, 'background');
 
-  const createMutation = useCreateChore(householdId ?? '');
+  const createMutation = useCreateChore(householdId ?? '', user?.uid);
   const { data: members = [] } = useHouseholdMembers(householdId);
   const memberUserIds = useMemo(() => members.map((m) => m.userId), [members]);
   const { profiles } = useUserProfiles(memberUserIds);

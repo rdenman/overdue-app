@@ -5,23 +5,26 @@
 
 import { ChoreCard } from '@/components/chore-card';
 import { ThemedView } from '@/components/themed-view';
-import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
 import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useCompleteChore, useTodayChores, useUndoCompletion } from '@/lib/hooks/use-chores';
+import { useNotificationSettings } from '@/lib/hooks/use-notification-settings';
 import { useUserHouseholds } from '@/lib/hooks/use-households';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { isChoreOverdue } from '@/lib/services/chore-service';
 import { signOut } from '@/lib/services/auth-service';
+import { scheduleAllNotifications } from '@/lib/services/notification-service';
 import { Chore } from '@/lib/types/chore';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
   FlatList,
   StyleSheet,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,11 +43,21 @@ export default function TodayScreen() {
     return map;
   }, [households]);
 
+  const tintColor = useThemeColor({}, 'tint');
+  const { settings } = useNotificationSettings();
+
   const {
     data: allChores = [],
     isLoading,
     refetch,
   } = useTodayChores(user?.uid, householdIds);
+
+  // Sync notifications whenever chore data changes
+  useEffect(() => {
+    if (allChores.length > 0 && settings.enabled) {
+      scheduleAllNotifications(allChores, settings);
+    }
+  }, [allChores, settings]);
 
   // Filter to chores that are due today or overdue (not future, not completed)
   const todayChores = useMemo(() => {
@@ -104,18 +117,35 @@ export default function TodayScreen() {
       {user?.emailVerified && <StatusBar style="auto" />}
       <ThemedView style={styles.container}>
         <View style={[styles.header, { borderBottomColor: borderColor }]}>
-          <View>
-            <Typography variant="title">Today&apos;s Chores</Typography>
-            <Typography muted style={styles.greeting}>
+          <View style={styles.headerTitle}>
+            <Typography variant="title" numberOfLines={1}>Today&apos;s Chores</Typography>
+            <Typography muted style={styles.greeting} numberOfLines={1}>
               Hello, {user?.displayName || 'there'}!
             </Typography>
           </View>
-          <Button
-            title="Sign Out"
-            variant="outlined"
-            size="sm"
-            onPress={handleSignOut}
-          />
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => router.push('/calendar')}
+              style={styles.iconButton}
+              hitSlop={8}
+            >
+              <Ionicons name="calendar-outline" size={22} color={tintColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push('/settings')}
+              style={styles.iconButton}
+              hitSlop={8}
+            >
+              <Ionicons name="settings-outline" size={22} color={tintColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSignOut}
+              style={styles.iconButton}
+              hitSlop={8}
+            >
+              <Ionicons name="log-out-outline" size={22} color={tintColor} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {isLoading ? (
@@ -176,10 +206,21 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
   },
+  headerTitle: {
+    flex: 1,
+    marginRight: 12,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 0,
+    gap: 10,
+  },
+  iconButton: { padding: 4 },
   greeting: { marginTop: 4 },
   center: { flex: 1 },
   list: { padding: 16, paddingBottom: 40 },

@@ -63,6 +63,24 @@ export function isChoreOverdue(chore: Chore): boolean {
   return chore.dueAt.toDate() < new Date() && !chore.lastCompletion;
 }
 
+/**
+ * Compute the next N upcoming due dates starting from a given date and interval.
+ */
+export function getUpcomingDueDates(
+  fromDate: Date,
+  interval: Interval,
+  count: number
+): Date[] {
+  const dates: Date[] = [];
+  let current = fromDate;
+  for (let i = 0; i < count; i++) {
+    const next = calculateNextDueDate(current, interval);
+    dates.push(next);
+    current = next;
+  }
+  return dates;
+}
+
 // ── CRUD ──
 
 export async function createChore(input: ChoreCreateInput): Promise<Chore> {
