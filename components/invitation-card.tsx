@@ -3,14 +3,12 @@
  * Displays a household invitation with accept/decline actions
  */
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Colors } from '@/constants/theme';
-import { useThemeColor } from '@/lib/hooks/use-theme-color';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Chip } from '@/components/ui/chip';
+import { Typography } from '@/components/ui/typography';
 import { InviteWithHouseholdInfo } from '@/lib/types/invite';
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Chip } from '@/components/ui/chip';
 import {
   StyleSheet,
   View,
@@ -25,8 +23,6 @@ interface InvitationCardProps {
 export function InvitationCard({ invite, onAccept, onDecline }: InvitationCardProps) {
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
-
-  const borderColor = useThemeColor({}, 'border');
 
   const handleAccept = async () => {
     try {
@@ -43,7 +39,7 @@ export function InvitationCard({ invite, onAccept, onDecline }: InvitationCardPr
     try {
       setDeclining(true);
       await onDecline(invite.id);
-    } catch { 
+    } catch {
       // Error handled by parent
     } finally {
       setDeclining(false);
@@ -56,15 +52,11 @@ export function InvitationCard({ invite, onAccept, onDecline }: InvitationCardPr
   );
 
   return (
-    <ThemedView
-      style={[styles.card, { borderColor }]}
-      lightColor={Colors.light.cardBackground}
-      darkColor={Colors.dark.cardBackground}
-    >
+    <Card variant="outlined">
       <View style={styles.header}>
-        <ThemedText type="defaultSemiBold" style={styles.householdName}>
+        <Typography variant="bodySemiBold" style={styles.householdName}>
           {invite.householdName || 'Unknown Household'}
-        </ThemedText>
+        </Typography>
         <Chip
           label={invite.role === 'admin' ? 'Admin' : 'Member'}
           selected
@@ -73,12 +65,12 @@ export function InvitationCard({ invite, onAccept, onDecline }: InvitationCardPr
       </View>
 
       <View style={styles.details}>
-        <ThemedText style={styles.detailText}>
+        <Typography variant="caption" muted>
           From: {invite.inviterName || 'Unknown User'}
-        </ThemedText>
-        <ThemedText style={styles.detailText}>
+        </Typography>
+        <Typography variant="caption" muted>
           Expires in {daysUntilExpiry} {daysUntilExpiry === 1 ? 'day' : 'days'}
-        </ThemedText>
+        </Typography>
       </View>
 
       <View style={styles.actions}>
@@ -99,17 +91,11 @@ export function InvitationCard({ invite, onAccept, onDecline }: InvitationCardPr
           style={{ flex: 1 }}
         />
       </View>
-    </ThemedView>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -122,11 +108,6 @@ const styles = StyleSheet.create({
   },
   details: {
     marginBottom: 16,
-  },
-  detailText: {
-    fontSize: 13,
-    opacity: 0.7,
-    marginBottom: 4,
   },
   actions: {
     flexDirection: 'row',

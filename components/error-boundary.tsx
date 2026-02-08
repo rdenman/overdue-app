@@ -5,8 +5,8 @@
 
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
+import { Typography } from './ui/typography';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -41,16 +41,16 @@ export class ErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <ThemedView style={styles.container}>
-          <ThemedText type="title" style={styles.title}>
+          <Typography variant="title" style={styles.title}>
             Something went wrong
-          </ThemedText>
-          <ThemedText style={styles.message}>
+          </Typography>
+          <Typography style={styles.message}>
             We&apos;re sorry, but something unexpected happened. Please restart the app.
-          </ThemedText>
+          </Typography>
           {__DEV__ && this.state.error && (
-            <ThemedText style={styles.errorDetails}>
+            <Typography variant="caption" muted style={styles.errorDetails}>
               {this.state.error.toString()}
-            </ThemedText>
+            </Typography>
           )}
         </ThemedView>
       );
@@ -75,8 +75,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorDetails: {
-    fontSize: 12,
-    opacity: 0.7,
     marginTop: 20,
     textAlign: 'center',
   },

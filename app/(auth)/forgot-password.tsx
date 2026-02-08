@@ -3,19 +3,18 @@
  * Send password reset email
  */
 
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Typography } from '@/components/ui/typography';
 import { resetPassword } from '@/lib/services/auth-service';
 import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -57,25 +56,24 @@ export default function ForgotPasswordScreen() {
         style={styles.keyboardView}
       >
         <View style={styles.content}>
-          <ThemedText type="title" style={styles.title}>
+          <Typography variant="title" style={styles.title}>
             Reset Password
-          </ThemedText>
-          <ThemedText style={styles.subtitle}>
+          </Typography>
+          <Typography muted style={styles.subtitle}>
             Enter your email address and we&apos;ll send you instructions to reset
             your password.
-          </ThemedText>
+          </Typography>
 
           <View style={styles.form}>
-            <TextInput
-              style={styles.input}
+            <Input
               placeholder="Email"
-              placeholderTextColor="#999"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
               editable={!loading}
+              containerStyle={styles.inputContainer}
             />
 
             <Button
@@ -89,7 +87,9 @@ export default function ForgotPasswordScreen() {
             <View style={styles.footer}>
               <Link href="/(auth)/sign-in" asChild>
                 <TouchableOpacity disabled={loading}>
-                  <Text style={styles.link}>Back to Sign In</Text>
+                  <Typography color="primary" variant="bodySemiBold">
+                    Back to Sign In
+                  </Typography>
                 </TouchableOpacity>
               </Link>
             </View>
@@ -118,29 +118,18 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     textAlign: 'center',
-    opacity: 0.7,
     marginBottom: 32,
     lineHeight: 22,
   },
   form: {
     width: '100%',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 16,
+  inputContainer: {
     marginBottom: 16,
-    fontSize: 16,
-    backgroundColor: '#fff',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 24,
-  },
-  link: {
-    color: '#007AFF',
-    fontWeight: '600',
   },
 });

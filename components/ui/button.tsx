@@ -10,7 +10,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  useColorScheme,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
@@ -49,11 +48,11 @@ export function Button({
   style,
   textStyle,
 }: ButtonProps) {
-  const colorScheme = useColorScheme();
   const tintColor = useThemeColor({}, 'tint');
   const errorColor = useThemeColor({}, 'error');
   const successColor = useThemeColor({}, 'success');
   const borderThemeColor = useThemeColor({}, 'border');
+  const contrastTextColor = useThemeColor({ light: '#fff', dark: '#000' }, 'text');
 
   // Resolve the semantic color to an actual value
   const colorMap: Record<ButtonColor, string> = {
@@ -64,8 +63,7 @@ export function Button({
   const resolvedColor = colorMap[color];
 
   // Contrast text for filled buttons
-  const filledTextColor =
-    color === 'danger' ? '#fff' : colorScheme === 'dark' ? '#000' : '#fff';
+  const filledTextColor = color === 'danger' ? '#fff' : contrastTextColor;
 
   // Build container styles per variant
   const sizeStyles = SIZE_CONFIG[size];

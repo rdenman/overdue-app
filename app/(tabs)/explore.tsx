@@ -4,11 +4,13 @@
  */
 
 import { CreateHouseholdModal } from '@/components/create-household-modal';
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
-import { Colors } from '@/constants/theme';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
+import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useUserHouseholds } from '@/lib/hooks/use-households';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
@@ -16,11 +18,9 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -29,8 +29,6 @@ export default function HouseholdsScreen() {
   const router = useRouter();
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
-  const errorColor = useThemeColor({}, 'error');
-  const tintColor = useThemeColor({}, 'tint');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const {
@@ -39,14 +37,13 @@ export default function HouseholdsScreen() {
     error,
   } = useUserHouseholds(user?.uid);
 
-
   const handleHouseholdPress = (householdId: string) => {
     router.push(`/households/${householdId}/chores`);
   };
 
   return (
-    <SafeAreaView 
-      style={[styles.safeArea, { backgroundColor }]} 
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor }]}
       edges={user?.emailVerified ? ['top'] : []}
     >
       {user?.emailVerified && <StatusBar style="auto" />}
@@ -54,10 +51,10 @@ export default function HouseholdsScreen() {
         <View style={[styles.header, { borderBottomColor: borderColor }]}>
           <View style={styles.headerContent}>
             <View>
-              <ThemedText type="title">My Households</ThemedText>
-              <ThemedText style={styles.subtitle}>
+              <Typography variant="title">My Households</Typography>
+              <Typography muted style={styles.subtitle}>
                 View and manage your households
-              </ThemedText>
+              </Typography>
             </View>
             <Button
               title="+ New"
@@ -68,57 +65,47 @@ export default function HouseholdsScreen() {
         </View>
 
         <ScrollView style={styles.content}>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={tintColor} />
-            <ThemedText style={styles.loadingText}>Loading households...</ThemedText>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <ThemedText style={[styles.errorText, { color: errorColor }]}>Error: {error.message}</ThemedText>
-          </View>
-        ) : households.length === 0 ? (
-          <View style={styles.emptyState}>
-            <ThemedText type="subtitle">No households yet</ThemedText>
-            <ThemedText style={styles.emptyMessage}>
-              Create a household to start tracking chores.
-            </ThemedText>
-          </View>
-        ) : (
-          <View style={styles.householdsList}>
-            {households.map((household) => (
-              <Pressable
-                key={household.id}
-                onPress={() => handleHouseholdPress(household.id)}
-              >
-                <ThemedView 
-                  style={styles.householdCard}
-                  lightColor={Colors.light.cardBackground}
-                  darkColor={Colors.dark.cardBackground}
+          {loading ? (
+            <LoadingState message="Loading households..." />
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Typography color="error" style={styles.errorText}>
+                Error: {error.message}
+              </Typography>
+            </View>
+          ) : households.length === 0 ? (
+            <EmptyState
+              title="No households yet"
+              message="Create a household to start tracking chores."
+            />
+          ) : (
+            <View style={styles.householdsList}>
+              {households.map((household) => (
+                <Card
+                  key={household.id}
+                  onPress={() => handleHouseholdPress(household.id)}
                 >
                   <View style={styles.householdHeader}>
-                    <ThemedText type="defaultSemiBold" style={styles.householdName}>
+                    <Typography variant="bodySemiBold" style={styles.householdName}>
                       {household.name}
-                    </ThemedText>
+                    </Typography>
                     <Chip
                       label={household.ownerId === user?.uid ? 'Owner' : 'Member'}
                       selected
                       size="sm"
                     />
                   </View>
-                  <ThemedText style={styles.householdDetail}>
+                  <Typography variant="caption" muted style={styles.householdDetail}>
                     Created: {household.createdAt.toDate().toLocaleDateString()}
-                  </ThemedText>
-                  <ThemedText style={styles.householdDetail}>
+                  </Typography>
+                  <Typography variant="caption" muted style={styles.householdDetail}>
                     Tap to view chores
-                  </ThemedText>
-                </ThemedView>
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-      </ScrollView>
+                  </Typography>
+                </Card>
+              ))}
+            </View>
+          )}
+        </ScrollView>
       </ThemedView>
 
       <CreateHouseholdModal
@@ -149,18 +136,9 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 4,
-    opacity: 0.7,
   },
   content: {
     flex: 1,
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    opacity: 0.7,
   },
   errorContainer: {
     padding: 40,
@@ -169,22 +147,8 @@ const styles = StyleSheet.create({
   errorText: {
     textAlign: 'center',
   },
-  emptyState: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyMessage: {
-    textAlign: 'center',
-    opacity: 0.7,
-    marginTop: 8,
-  },
   householdsList: {
     padding: 20,
-  },
-  householdCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
   },
   householdHeader: {
     flexDirection: 'row',
@@ -196,8 +160,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   householdDetail: {
-    fontSize: 12,
-    opacity: 0.7,
     marginTop: 4,
   },
 });

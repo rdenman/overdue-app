@@ -12,7 +12,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useColorScheme,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
@@ -56,12 +55,12 @@ export function Chip({
   style,
   textStyle,
 }: ChipProps) {
-  const colorScheme = useColorScheme();
   const tintColor = useThemeColor({}, 'tint');
   const errorColor = useThemeColor({}, 'error');
   const successColor = useThemeColor({}, 'success');
   const borderThemeColor = useThemeColor({}, 'border');
   const textThemeColor = useThemeColor({}, 'text');
+  const contrastTextColor = useThemeColor({ light: '#fff', dark: '#000' }, 'text');
 
   // Resolve semantic color (same mapping as Button)
   const colorMap: Record<ChipColor, string> = {
@@ -72,8 +71,7 @@ export function Chip({
   const resolvedColor = colorMap[color];
 
   // Contrast text for filled / selected chips
-  const filledTextColor =
-    color === 'danger' ? '#fff' : colorScheme === 'dark' ? '#000' : '#fff';
+  const filledTextColor = color === 'danger' ? '#fff' : contrastTextColor;
 
   const sizeStyles = SIZE_CONFIG[size];
 

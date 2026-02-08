@@ -1,16 +1,15 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { useColorScheme } from 'react-native';
 
 import { EmailVerificationBanner } from '@/components/email-verification-banner';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { usePendingInvites } from '@/lib/hooks/use-invites';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const tintColor = useThemeColor({}, 'tint');
   const { user } = useAuth();
   const { data: pendingInvites } = usePendingInvites(user?.email);
   const inviteCount = pendingInvites?.length ?? 0;
@@ -20,7 +19,7 @@ export default function TabLayout() {
       <EmailVerificationBanner />
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+          tabBarActiveTintColor: tintColor,
           headerShown: false,
           tabBarButton: HapticTab,
         }}>

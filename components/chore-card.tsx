@@ -3,10 +3,9 @@
  * Shows chore name, due date, assignment, overdue badge, and quick complete toggle
  */
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
-import { Colors } from '@/constants/theme';
+import { Typography } from '@/components/ui/typography';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { isChoreOverdue } from '@/lib/services/chore-service';
 import { Chore } from '@/lib/types/chore';
@@ -60,89 +59,82 @@ export function ChoreCard({
   const dueDateLabel = formatDueDate(dueDate);
 
   return (
-    <Pressable onPress={onPress} disabled={disabled}>
-      <ThemedView
-        style={[styles.card, { borderColor }]}
-        lightColor={Colors.light.cardBackground}
-        darkColor={Colors.dark.cardBackground}
-      >
-        <View style={styles.row}>
-          {/* Completion toggle */}
-          <Pressable
-            style={[
-              styles.checkbox,
-              completed && { backgroundColor: successColor, borderColor: successColor },
-              !completed && { borderColor: overdue ? errorColor : borderColor },
-            ]}
-            onPress={completed ? onUndo : onComplete}
-            disabled={disabled}
-            hitSlop={8}
-          >
-            {completed && (
-              <ThemedText style={styles.checkmark}>✓</ThemedText>
-            )}
-          </Pressable>
-
-          {/* Chore info */}
-          <View style={styles.info}>
-            <ThemedText
-              type="defaultSemiBold"
-              style={[
-                styles.name,
-                completed && styles.completedName,
-              ]}
-              numberOfLines={1}
-            >
-              {chore.name}
-            </ThemedText>
-
-            <View style={styles.meta}>
-              <ThemedText
-                style={[
-                  styles.dueText,
-                  overdue && { color: errorColor },
-                  completed && { color: successColor },
-                ]}
-              >
-                {completed ? 'Done' : dueDateLabel}
-              </ThemedText>
-
-              {assigneeName ? (
-                <ThemedText style={styles.assignee} numberOfLines={1}>
-                  · {assigneeName}
-                </ThemedText>
-              ) : null}
-
-              {householdName ? (
-                <ThemedText style={styles.household} numberOfLines={1}>
-                  · {householdName}
-                </ThemedText>
-              ) : null}
-            </View>
-          </View>
-
-          {/* Overdue badge */}
-          {overdue && !completed && (
-            <Chip
-              label="Overdue"
-              selected
-              color="danger"
-              size="sm"
-              style={{ marginLeft: 8 }}
-            />
+    <Card onPress={onPress} disabled={disabled} style={styles.card}>
+      <View style={styles.row}>
+        {/* Completion toggle */}
+        <Pressable
+          style={[
+            styles.checkbox,
+            completed && { backgroundColor: successColor, borderColor: successColor },
+            !completed && { borderColor: overdue ? errorColor : borderColor },
+          ]}
+          onPress={completed ? onUndo : onComplete}
+          disabled={disabled}
+          hitSlop={8}
+        >
+          {completed && (
+            <Typography style={styles.checkmark}>✓</Typography>
           )}
+        </Pressable>
+
+        {/* Chore info */}
+        <View style={styles.info}>
+          <Typography
+            variant="bodySemiBold"
+            style={[
+              styles.name,
+              completed && styles.completedName,
+            ]}
+            numberOfLines={1}
+          >
+            {chore.name}
+          </Typography>
+
+          <View style={styles.meta}>
+            <Typography
+              variant="caption"
+              style={[
+                overdue && { color: errorColor },
+                completed && { color: successColor },
+              ]}
+              muted={!overdue && !completed}
+            >
+              {completed ? 'Done' : dueDateLabel}
+            </Typography>
+
+            {assigneeName ? (
+              <Typography variant="caption" muted numberOfLines={1} style={styles.metaItem}>
+                · {assigneeName}
+              </Typography>
+            ) : null}
+
+            {householdName ? (
+              <Typography variant="caption" muted numberOfLines={1} style={styles.metaItem}>
+                · {householdName}
+              </Typography>
+            ) : null}
+          </View>
         </View>
-      </ThemedView>
-    </Pressable>
+
+        {/* Overdue badge */}
+        {overdue && !completed && (
+          <Chip
+            label="Overdue"
+            selected
+            color="danger"
+            size="sm"
+            style={{ marginLeft: 8 }}
+          />
+        )}
+      </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
     padding: 14,
     marginBottom: 10,
-    borderWidth: 1,
   },
   row: {
     flexDirection: 'row',
@@ -178,18 +170,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 2,
   },
-  dueText: {
-    fontSize: 13,
-    opacity: 0.7,
-  },
-  assignee: {
-    fontSize: 13,
-    opacity: 0.6,
-    marginLeft: 4,
-  },
-  household: {
-    fontSize: 13,
-    opacity: 0.6,
+  metaItem: {
     marginLeft: 4,
   },
 });

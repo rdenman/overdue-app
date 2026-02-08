@@ -3,19 +3,18 @@
  * Email/password authentication
  */
 
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Typography } from '@/components/ui/typography';
 import { signIn } from '@/lib/services/auth-service';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -49,40 +48,40 @@ export default function SignInScreen() {
         style={styles.keyboardView}
       >
         <View style={styles.content}>
-          <ThemedText type="title" style={styles.title}>
+          <Typography variant="title" style={styles.title}>
             Welcome Back
-          </ThemedText>
-          <ThemedText style={styles.subtitle}>
+          </Typography>
+          <Typography muted style={styles.subtitle}>
             Sign in to continue
-          </ThemedText>
+          </Typography>
 
           <View style={styles.form}>
-            <TextInput
-              style={styles.input}
+            <Input
               placeholder="Email"
-              placeholderTextColor="#999"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
               editable={!loading}
+              containerStyle={styles.inputContainer}
             />
 
-            <TextInput
-              style={styles.input}
+            <Input
               placeholder="Password"
-              placeholderTextColor="#999"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
               autoComplete="password"
               editable={!loading}
+              containerStyle={styles.inputContainer}
             />
 
             <Link href="/(auth)/forgot-password" asChild>
               <TouchableOpacity disabled={loading}>
-                <Text style={styles.forgotPassword}>Forgot password?</Text>
+                <Typography variant="bodySmall" color="primary" style={styles.forgotPassword}>
+                  Forgot password?
+                </Typography>
               </TouchableOpacity>
             </Link>
 
@@ -95,10 +94,10 @@ export default function SignInScreen() {
             />
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Don&apos;t have an account? </Text>
+              <Typography muted>Don&apos;t have an account? </Typography>
               <Link href="/(auth)/sign-up" asChild>
                 <TouchableOpacity disabled={loading}>
-                  <Text style={styles.link}>Sign Up</Text>
+                  <Typography color="primary" variant="bodySemiBold">Sign Up</Typography>
                 </TouchableOpacity>
               </Link>
             </View>
@@ -127,23 +126,15 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     textAlign: 'center',
-    opacity: 0.7,
     marginBottom: 32,
   },
   form: {
     width: '100%',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 16,
+  inputContainer: {
     marginBottom: 16,
-    fontSize: 16,
-    backgroundColor: '#fff',
   },
   forgotPassword: {
-    color: '#007AFF',
     textAlign: 'right',
     marginBottom: 24,
   },
@@ -151,12 +142,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 24,
-  },
-  footerText: {
-    color: '#666',
-  },
-  link: {
-    color: '#007AFF',
-    fontWeight: '600',
   },
 });

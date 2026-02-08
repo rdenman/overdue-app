@@ -4,9 +4,11 @@
  */
 
 import { InvitationCard } from '@/components/invitation-card';
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors } from '@/constants/theme';
+import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
+import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useAcceptInvite, useDeclineInvite, usePendingInvites } from '@/lib/hooks/use-invites';
 import { useNetworkStatus } from '@/lib/hooks/use-network-status';
@@ -14,7 +16,6 @@ import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import {
-  ActivityIndicator,
   Alert,
   RefreshControl,
   ScrollView,
@@ -93,10 +94,10 @@ export default function InvitationsScreen() {
       {user?.emailVerified && <StatusBar style="auto" />}
       <ThemedView style={styles.container}>
         <View style={[styles.header, { borderBottomColor: borderColor }]}>
-          <ThemedText type="title">Invitations</ThemedText>
-          <ThemedText style={styles.subtitle}>
+          <Typography variant="title">Invitations</Typography>
+          <Typography muted style={styles.subtitle}>
             Household invitations sent to you
-          </ThemedText>
+          </Typography>
         </View>
 
         <ScrollView
@@ -110,65 +111,54 @@ export default function InvitationsScreen() {
           }
         >
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={tintColor} />
-              <ThemedText style={styles.loadingText}>Loading invitations...</ThemedText>
-            </View>
+            <LoadingState message="Loading invitations..." />
           ) : error ? (
             <View style={styles.errorContainer}>
-              <ThemedText style={styles.errorText}>Error: {error.message}</ThemedText>
+              <Typography muted style={styles.errorText}>
+                Error: {error.message}
+              </Typography>
             </View>
           ) : invites.length === 0 ? (
-            <View style={styles.emptyState}>
-              <ThemedText type="subtitle">No pending invitations</ThemedText>
-              <ThemedText style={styles.emptyMessage}>
-                When someone invites you to their household, you&apos;ll see it here.
-              </ThemedText>
-            </View>
+            <EmptyState
+              title="No pending invitations"
+              message="When someone invites you to their household, you'll see it here."
+            />
           ) : (
             <>
               {!isOnline && invites.length > 0 && (
-                <ThemedView
-                  style={[styles.offlineWarning, { borderColor }]}
-                  lightColor={Colors.light.cardBackground}
-                  darkColor={Colors.dark.cardBackground}
-                >
-                  <ThemedText style={styles.offlineText}>
+                <Card variant="outlined" style={[styles.offlineWarning, { borderColor }]}>
+                  <Typography variant="caption" style={styles.offlineText}>
                     ⚠️ You are offline. Connect to the internet to accept or decline invitations.
-                  </ThemedText>
-                </ThemedView>
+                  </Typography>
+                </Card>
               )}
               <View style={styles.invitesList}>
-              {invites.map((invite) => (
-                <InvitationCard
-                  key={invite.id}
-                  invite={invite}
-                  onAccept={handleAccept}
-                  onDecline={handleDecline}
-                />
-              ))}
+                {invites.map((invite) => (
+                  <InvitationCard
+                    key={invite.id}
+                    invite={invite}
+                    onAccept={handleAccept}
+                    onDecline={handleDecline}
+                  />
+                ))}
               </View>
             </>
           )}
 
-          <ThemedView
-            style={styles.infoCard}
-            lightColor={Colors.light.cardBackground}
-            darkColor={Colors.dark.cardBackground}
-          >
-            <ThemedText type="defaultSemiBold" style={styles.infoTitle}>
+          <Card variant="filled" style={styles.infoCard}>
+            <Typography variant="bodySemiBold" style={styles.infoTitle}>
               About Invitations
-            </ThemedText>
-            <ThemedText style={styles.infoText}>
+            </Typography>
+            <Typography muted style={styles.infoText}>
               • Invitations expire after 7 days
-            </ThemedText>
-            <ThemedText style={styles.infoText}>
+            </Typography>
+            <Typography muted style={styles.infoText}>
               • You can accept or decline at any time
-            </ThemedText>
-            <ThemedText style={styles.infoText}>
+            </Typography>
+            <Typography muted style={styles.infoText}>
               • Accepting adds you to the household
-            </ThemedText>
-          </ThemedView>
+            </Typography>
+          </Card>
         </ScrollView>
       </ThemedView>
     </SafeAreaView>
@@ -188,18 +178,9 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 4,
-    opacity: 0.7,
   },
   content: {
     flex: 1,
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    opacity: 0.7,
   },
   errorContainer: {
     padding: 40,
@@ -207,16 +188,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     textAlign: 'center',
-    opacity: 0.7,
-  },
-  emptyState: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyMessage: {
-    textAlign: 'center',
-    opacity: 0.7,
-    marginTop: 8,
   },
   invitesList: {
     padding: 20,
@@ -224,25 +195,18 @@ const styles = StyleSheet.create({
   infoCard: {
     margin: 20,
     padding: 20,
-    borderRadius: 12,
   },
   infoTitle: {
     marginBottom: 12,
   },
   infoText: {
     marginTop: 8,
-    opacity: 0.8,
   },
   offlineWarning: {
     marginHorizontal: 20,
     marginTop: 12,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
   },
   offlineText: {
-    fontSize: 13,
     textAlign: 'center',
-    opacity: 0.8,
   },
 });

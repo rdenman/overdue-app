@@ -3,22 +3,21 @@
  * New user registration with email, password, and display name
  */
 
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Typography } from '@/components/ui/typography';
 import { signUp } from '@/lib/services/auth-service';
 import { createDefaultHousehold } from '@/lib/services/household-service';
 import { createUserProfile } from '@/lib/services/user-service';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -89,57 +88,53 @@ export default function SignUpScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.content}>
-            <ThemedText type="title" style={styles.title}>
+            <Typography variant="title" style={styles.title}>
               Create Account
-            </ThemedText>
-            <ThemedText style={styles.subtitle}>
+            </Typography>
+            <Typography muted style={styles.subtitle}>
               Join to start tracking chores
-            </ThemedText>
+            </Typography>
 
             <View style={styles.form}>
-              <TextInput
-                style={styles.input}
+              <Input
                 placeholder="Display Name"
-                placeholderTextColor="#999"
                 value={displayName}
                 onChangeText={setDisplayName}
                 autoCapitalize="words"
                 autoComplete="name"
                 editable={!loading}
+                containerStyle={styles.inputContainer}
               />
 
-              <TextInput
-                style={styles.input}
+              <Input
                 placeholder="Email"
-                placeholderTextColor="#999"
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoComplete="email"
                 editable={!loading}
+                containerStyle={styles.inputContainer}
               />
 
-              <TextInput
-                style={styles.input}
+              <Input
                 placeholder="Password (min. 6 characters)"
-                placeholderTextColor="#999"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 autoComplete="password-new"
                 editable={!loading}
+                containerStyle={styles.inputContainer}
               />
 
-              <TextInput
-                style={styles.input}
+              <Input
                 placeholder="Confirm Password"
-                placeholderTextColor="#999"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
                 autoComplete="password-new"
                 editable={!loading}
+                containerStyle={styles.inputContainer}
               />
 
               <Button
@@ -151,10 +146,10 @@ export default function SignUpScreen() {
               />
 
               <View style={styles.footer}>
-                <Text style={styles.footerText}>Already have an account? </Text>
+                <Typography muted>Already have an account? </Typography>
                 <Link href="/(auth)/sign-in" asChild>
                   <TouchableOpacity disabled={loading}>
-                    <Text style={styles.link}>Sign In</Text>
+                    <Typography color="primary" variant="bodySemiBold">Sign In</Typography>
                   </TouchableOpacity>
                 </Link>
               </View>
@@ -187,31 +182,17 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     textAlign: 'center',
-    opacity: 0.7,
     marginBottom: 32,
   },
   form: {
     width: '100%',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 16,
+  inputContainer: {
     marginBottom: 16,
-    fontSize: 16,
-    backgroundColor: '#fff',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 24,
-  },
-  footerText: {
-    color: '#666',
-  },
-  link: {
-    color: '#007AFF',
-    fontWeight: '600',
   },
 });

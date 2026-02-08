@@ -3,8 +3,11 @@
  * Form for creating a new chore within a household
  */
 
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/chip';
+import { Input } from '@/components/ui/input';
+import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useCreateChore } from '@/lib/hooks/use-chores';
 import { useHouseholdMembers } from '@/lib/hooks/use-households';
@@ -15,15 +18,12 @@ import { IntervalType } from '@/lib/types/chore';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Chip } from '@/components/ui/chip';
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -42,9 +42,6 @@ export default function CreateChoreScreen() {
   const headerHeight = useHeaderHeight();
 
   const backgroundColor = useThemeColor({}, 'background');
-  const borderColor = useThemeColor({}, 'border');
-  const textColor = useThemeColor({}, 'text');
-  const inputBg = useThemeColor({}, 'cardBackground');
 
   const createMutation = useCreateChore(householdId ?? '');
   const { data: members = [] } = useHouseholdMembers(householdId);
@@ -108,136 +105,120 @@ export default function CreateChoreScreen() {
         >
           <ThemedView style={styles.content}>
             {/* Name */}
-          <View style={styles.field}>
-            <ThemedText type="defaultSemiBold" style={styles.label}>
-              Name *
-            </ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: inputBg, borderColor, color: textColor }]}
-              value={name}
-              onChangeText={setName}
-              placeholder="e.g. Vacuum living room"
-              placeholderTextColor={borderColor}
-              maxLength={100}
-              autoFocus
-            />
-          </View>
-
-          {/* Description */}
-          <View style={styles.field}>
-            <ThemedText type="defaultSemiBold" style={styles.label}>
-              Description
-            </ThemedText>
-            <TextInput
-              style={[
-                styles.input,
-                styles.textArea,
-                { backgroundColor: inputBg, borderColor, color: textColor },
-              ]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Optional details..."
-              placeholderTextColor={borderColor}
-              multiline
-              numberOfLines={3}
-            />
-          </View>
-
-          {/* Interval type */}
-          <View style={styles.field}>
-            <ThemedText type="defaultSemiBold" style={styles.label}>
-              Repeat
-            </ThemedText>
-            <View style={styles.chips}>
-              {INTERVAL_OPTIONS.map((opt) => (
-                <Chip
-                  key={opt.type}
-                  label={opt.label}
-                  selected={opt.type === intervalType}
-                  onPress={() => {
-                    setIntervalType(opt.type);
-                    setIntervalValue(String(opt.defaultValue));
-                  }}
-                />
-              ))}
-            </View>
-          </View>
-
-          {/* Interval value (for "every N") */}
-          {(intervalType === 'monthly' ||
-            intervalType === 'yearly' ||
-            intervalType === 'custom') && (
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold" style={styles.label}>
-                Every
-              </ThemedText>
-              <View style={styles.valueRow}>
-                <TextInput
-                  style={[
-                    styles.input,
-                    styles.valueInput,
-                    { backgroundColor: inputBg, borderColor, color: textColor },
-                  ]}
-                  value={intervalValue}
-                  onChangeText={setIntervalValue}
-                  keyboardType="number-pad"
-                  maxLength={3}
-                />
-                <ThemedText style={styles.valueUnit}>
-                  {intervalType === 'monthly'
-                    ? parsedValue === 1
-                      ? 'month'
-                      : 'months'
-                    : intervalType === 'yearly'
-                      ? parsedValue === 1
-                        ? 'year'
-                        : 'years'
-                      : parsedValue === 1
-                        ? 'day'
-                        : 'days'}
-                </ThemedText>
+              <Input
+                label="Name *"
+                value={name}
+                onChangeText={setName}
+                placeholder="e.g. Vacuum living room"
+                maxLength={100}
+                autoFocus
+              />
+            </View>
+
+            {/* Description */}
+            <View style={styles.field}>
+              <Input
+                label="Description"
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Optional details..."
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
+            {/* Interval type */}
+            <View style={styles.field}>
+              <Typography variant="label" style={styles.fieldLabel}>
+                Repeat
+              </Typography>
+              <View style={styles.chips}>
+                {INTERVAL_OPTIONS.map((opt) => (
+                  <Chip
+                    key={opt.type}
+                    label={opt.label}
+                    selected={opt.type === intervalType}
+                    onPress={() => {
+                      setIntervalType(opt.type);
+                      setIntervalValue(String(opt.defaultValue));
+                    }}
+                  />
+                ))}
               </View>
             </View>
-          )}
 
-          {/* Due date preview */}
-          <View style={styles.field}>
-            <ThemedText style={styles.preview}>
-              First due: {previewDueDate.toLocaleDateString()}
-            </ThemedText>
-          </View>
+            {/* Interval value (for "every N") */}
+            {(intervalType === 'monthly' ||
+              intervalType === 'yearly' ||
+              intervalType === 'custom') && (
+              <View style={styles.field}>
+                <Typography variant="label" style={styles.fieldLabel}>
+                  Every
+                </Typography>
+                <View style={styles.valueRow}>
+                  <Input
+                    value={intervalValue}
+                    onChangeText={setIntervalValue}
+                    keyboardType="number-pad"
+                    maxLength={3}
+                    style={styles.valueInput}
+                  />
+                  <Typography muted style={styles.valueUnit}>
+                    {intervalType === 'monthly'
+                      ? parsedValue === 1
+                        ? 'month'
+                        : 'months'
+                      : intervalType === 'yearly'
+                        ? parsedValue === 1
+                          ? 'year'
+                          : 'years'
+                        : parsedValue === 1
+                          ? 'day'
+                          : 'days'}
+                  </Typography>
+                </View>
+              </View>
+            )}
 
-          {/* Assignment */}
-          <View style={styles.field}>
-            <ThemedText type="defaultSemiBold" style={styles.label}>
-              Assign to
-            </ThemedText>
-            <View style={styles.chips}>
-              <Chip
-                label="Anyone"
-                selected={!assignedTo}
-                onPress={() => setAssignedTo(undefined)}
-              />
-              {members.map((member, idx) => (
-                <Chip
-                  key={member.userId}
-                  label={profiles[idx]?.displayName ?? 'User'}
-                  selected={assignedTo === member.userId}
-                  onPress={() => setAssignedTo(member.userId)}
-                />
-              ))}
+            {/* Due date preview */}
+            <View style={styles.field}>
+              <Typography variant="caption" muted style={styles.preview}>
+                First due: {previewDueDate.toLocaleDateString()}
+              </Typography>
             </View>
-          </View>
 
-          {/* Submit */}
-          <Button
-            title="Create Chore"
-            onPress={handleCreate}
-            size="lg"
-            loading={createMutation.isPending}
-            disabled={createMutation.isPending}
-            style={{ marginTop: 12 }}
-          />
+            {/* Assignment */}
+            <View style={styles.field}>
+              <Typography variant="label" style={styles.fieldLabel}>
+                Assign to
+              </Typography>
+              <View style={styles.chips}>
+                <Chip
+                  label="Anyone"
+                  selected={!assignedTo}
+                  onPress={() => setAssignedTo(undefined)}
+                />
+                {members.map((member, idx) => (
+                  <Chip
+                    key={member.userId}
+                    label={profiles[idx]?.displayName ?? 'User'}
+                    selected={assignedTo === member.userId}
+                    onPress={() => setAssignedTo(member.userId)}
+                  />
+                ))}
+              </View>
+            </View>
+
+            {/* Submit */}
+            <Button
+              title="Create Chore"
+              onPress={handleCreate}
+              size="lg"
+              loading={createMutation.isPending}
+              disabled={createMutation.isPending}
+              style={{ marginTop: 12 }}
+            />
           </ThemedView>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -251,17 +232,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 20 },
   field: { marginBottom: 20 },
-  label: { marginBottom: 8, fontSize: 15 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  textArea: { minHeight: 80, textAlignVertical: 'top' },
+  fieldLabel: { marginBottom: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   valueRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   valueInput: { width: 70, textAlign: 'center' },
-  valueUnit: { fontSize: 16, opacity: 0.7 },
-  preview: { fontSize: 14, opacity: 0.6, fontStyle: 'italic' },
+  valueUnit: { fontSize: 16 },
+  preview: { fontStyle: 'italic' },
 });

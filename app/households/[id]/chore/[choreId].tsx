@@ -3,11 +3,13 @@
  * View chore info, complete/undo, edit fields, and delete
  */
 
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
-import { Colors } from '@/constants/theme';
+import { Input } from '@/components/ui/input';
+import { LoadingState } from '@/components/ui/loading-state';
+import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
 import {
   useChore,
@@ -26,13 +28,11 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Timestamp } from 'firebase/firestore';
 import React, { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -54,11 +54,7 @@ export default function ChoreDetailScreen() {
   const headerHeight = useHeaderHeight();
 
   const backgroundColor = useThemeColor({}, 'background');
-  const borderColor = useThemeColor({}, 'border');
-  const tintColor = useThemeColor({}, 'tint');
   const errorColor = useThemeColor({}, 'error');
-  const textColor = useThemeColor({}, 'text');
-  const inputBg = useThemeColor({}, 'cardBackground');
 
   const { data: chore, isLoading } = useChore(choreId);
   const { data: members = [] } = useHouseholdMembers(householdId);
@@ -171,7 +167,7 @@ export default function ChoreDetailScreen() {
       <>
         <Stack.Screen options={{ title: 'Loading...' }} />
         <View style={[styles.center, { backgroundColor }]}>
-          <ActivityIndicator size="large" color={tintColor} />
+          <LoadingState />
         </View>
       </>
     );
@@ -182,7 +178,7 @@ export default function ChoreDetailScreen() {
       <>
         <Stack.Screen options={{ title: 'Not Found' }} />
         <View style={[styles.center, { backgroundColor }]}>
-          <ThemedText>Chore not found</ThemedText>
+          <Typography>Chore not found</Typography>
         </View>
       </>
     );
@@ -206,85 +202,78 @@ export default function ChoreDetailScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           <ThemedView style={styles.content}>
-          {/* ── Complete / Undo ── */}
-          <Button
-            title={completed ? 'Undo Completion' : overdue ? 'Complete (Overdue)' : 'Mark Complete'}
-            onPress={completed ? handleUndo : handleComplete}
-            color={completed ? 'success' : overdue ? 'danger' : 'primary'}
-            size="lg"
-            loading={completeMutation.isPending || undoMutation.isPending}
-            disabled={completeMutation.isPending || undoMutation.isPending}
-            style={{ marginBottom: 16 }}
-          />
-
-          {completed && chore.lastCompletion && (
-            <ThemedView
-              style={styles.completionInfo}
-              lightColor={Colors.light.cardBackground}
-              darkColor={Colors.dark.cardBackground}
-            >
-              <ThemedText style={styles.completionLabel}>
-                Completed {chore.lastCompletion.completedAt.toDate().toLocaleString()}
-              </ThemedText>
-            </ThemedView>
-          )}
-
-          {/* ── View / Edit fields ── */}
-          {editing ? (
-            <EditForm
-              name={editName}
-              setName={setEditName}
-              description={editDesc}
-              setDescription={setEditDesc}
-              intervalType={editIntervalType}
-              setIntervalType={setEditIntervalType}
-              intervalValue={editIntervalValue}
-              setIntervalValue={setEditIntervalValue}
-              assignedTo={editAssignedTo}
-              setAssignedTo={setEditAssignedTo}
-              members={members}
-              profiles={profiles}
-              inputBg={inputBg}
-              borderColor={borderColor}
-              textColor={textColor}
-              onSave={handleSave}
-              onCancel={() => setEditing(false)}
-              saving={updateMutation.isPending}
+            {/* ── Complete / Undo ── */}
+            <Button
+              title={completed ? 'Undo Completion' : overdue ? 'Complete (Overdue)' : 'Mark Complete'}
+              onPress={completed ? handleUndo : handleComplete}
+              color={completed ? 'success' : overdue ? 'danger' : 'primary'}
+              size="lg"
+              loading={completeMutation.isPending || undoMutation.isPending}
+              disabled={completeMutation.isPending || undoMutation.isPending}
+              style={{ marginBottom: 16 }}
             />
-          ) : (
-            <View style={styles.details}>
-              <DetailRow label="Name" value={chore.name} />
-              <DetailRow label="Description" value={chore.description || '—'} />
-              <DetailRow
-                label="Repeat"
-                value={`${INTERVAL_LABELS[chore.interval.type]}${chore.interval.value > 1 ? ` (every ${chore.interval.value})` : ''}`}
-              />
-              <DetailRow
-                label="Due"
-                value={chore.dueAt.toDate().toLocaleDateString()}
-                valueColor={overdue ? errorColor : undefined}
-              />
-              <DetailRow
-                label="Assigned to"
-                value={assigneeProfile?.displayName ?? (chore.assignedTo ? 'User' : 'Anyone')}
-              />
 
-              <View style={styles.actionRow}>
-                <Button
-                  title="Edit"
-                  onPress={startEditing}
-                  style={{ flex: 1 }}
+            {completed && chore.lastCompletion && (
+              <Card variant="filled" style={styles.completionInfo}>
+                <Typography variant="caption" muted style={styles.completionLabel}>
+                  Completed {chore.lastCompletion.completedAt.toDate().toLocaleString()}
+                </Typography>
+              </Card>
+            )}
+
+            {/* ── View / Edit fields ── */}
+            {editing ? (
+              <EditForm
+                name={editName}
+                setName={setEditName}
+                description={editDesc}
+                setDescription={setEditDesc}
+                intervalType={editIntervalType}
+                setIntervalType={setEditIntervalType}
+                intervalValue={editIntervalValue}
+                setIntervalValue={setEditIntervalValue}
+                assignedTo={editAssignedTo}
+                setAssignedTo={setEditAssignedTo}
+                members={members}
+                profiles={profiles}
+                onSave={handleSave}
+                onCancel={() => setEditing(false)}
+                saving={updateMutation.isPending}
+              />
+            ) : (
+              <View style={styles.details}>
+                <DetailRow label="Name" value={chore.name} />
+                <DetailRow label="Description" value={chore.description || '—'} />
+                <DetailRow
+                  label="Repeat"
+                  value={`${INTERVAL_LABELS[chore.interval.type]}${chore.interval.value > 1 ? ` (every ${chore.interval.value})` : ''}`}
                 />
-                <Button
-                  title="Delete"
-                  onPress={handleDelete}
-                  color="danger"
-                  disabled={deleteMutation.isPending}
-                  style={{ flex: 1 }}
+                <DetailRow
+                  label="Due"
+                  value={chore.dueAt.toDate().toLocaleDateString()}
+                  valueColor={overdue ? errorColor : undefined}
                 />
+                <DetailRow
+                  label="Assigned to"
+                  value={assigneeProfile?.displayName ?? (chore.assignedTo ? 'User' : 'Anyone')}
+                />
+
+                <View style={styles.actionRow}>
+                  <Button
+                    title="Edit"
+                    onPress={startEditing}
+                    style={{ flex: 1 }}
+                  />
+                  <Button
+                    title="Delete"
+                    onPress={handleDelete}
+                    color="danger"
+                    disabled={deleteMutation.isPending}
+                    style={{ flex: 1 }}
+                  />
+                </View>
               </View>
-            </View>
-          )}
+            )}
           </ThemedView>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -305,10 +294,10 @@ function DetailRow({
 }) {
   return (
     <View style={styles.detailRow}>
-      <ThemedText style={styles.detailLabel}>{label}</ThemedText>
-      <ThemedText style={[styles.detailValue, valueColor ? { color: valueColor } : undefined]}>
+      <Typography variant="caption" muted>{label}</Typography>
+      <Typography style={valueColor ? { color: valueColor } : undefined}>
         {value}
-      </ThemedText>
+      </Typography>
     </View>
   );
 }
@@ -326,9 +315,6 @@ function EditForm(props: {
   setAssignedTo: (v: string | undefined) => void;
   members: { userId: string }[];
   profiles: (null | { displayName: string })[];
-  inputBg: string;
-  borderColor: string;
-  textColor: string;
   onSave: () => void;
   onCancel: () => void;
   saving: boolean;
@@ -337,26 +323,21 @@ function EditForm(props: {
     name, setName, description, setDescription,
     intervalType, setIntervalType, intervalValue, setIntervalValue,
     assignedTo, setAssignedTo, members, profiles,
-    inputBg, borderColor, textColor,
     onSave, onCancel, saving,
   } = props;
 
   return (
     <View style={styles.editForm}>
-      <TextInput
-        style={[styles.input, { backgroundColor: inputBg, borderColor, color: textColor }]}
+      <Input
         value={name}
         onChangeText={setName}
         placeholder="Chore name"
-        placeholderTextColor={borderColor}
         maxLength={100}
       />
-      <TextInput
-        style={[styles.input, styles.textArea, { backgroundColor: inputBg, borderColor, color: textColor }]}
+      <Input
         value={description}
         onChangeText={setDescription}
         placeholder="Description (optional)"
-        placeholderTextColor={borderColor}
         multiline
       />
       <View style={styles.chips}>
@@ -370,12 +351,12 @@ function EditForm(props: {
         ))}
       </View>
       {(intervalType === 'monthly' || intervalType === 'yearly' || intervalType === 'custom') && (
-        <TextInput
-          style={[styles.input, styles.valueInput, { backgroundColor: inputBg, borderColor, color: textColor }]}
+        <Input
           value={intervalValue}
           onChangeText={setIntervalValue}
           keyboardType="number-pad"
           maxLength={3}
+          style={styles.valueInput}
         />
       )}
       <View style={styles.chips}>
@@ -419,16 +400,12 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: 20 },
-  completionInfo: { padding: 12, borderRadius: 8, marginBottom: 20 },
-  completionLabel: { fontSize: 13, opacity: 0.7, textAlign: 'center' },
+  completionInfo: { marginBottom: 20 },
+  completionLabel: { textAlign: 'center' },
   details: { marginTop: 4 },
   detailRow: { marginBottom: 16 },
-  detailLabel: { fontSize: 13, opacity: 0.6, marginBottom: 2 },
-  detailValue: { fontSize: 16 },
   actionRow: { flexDirection: 'row', gap: 12, marginTop: 20 },
   editForm: { gap: 14, marginTop: 4 },
-  input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 16 },
-  textArea: { minHeight: 70, textAlignVertical: 'top' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   valueInput: { width: 70, textAlign: 'center' },
 });

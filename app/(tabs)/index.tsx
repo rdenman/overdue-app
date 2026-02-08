@@ -4,8 +4,11 @@
  */
 
 import { ChoreCard } from '@/components/chore-card';
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
+import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useCompleteChore, useTodayChores, useUndoCompletion } from '@/lib/hooks/use-chores';
 import { useUserHouseholds } from '@/lib/hooks/use-households';
@@ -16,9 +19,7 @@ import { Chore } from '@/lib/types/chore';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
 import {
-  ActivityIndicator,
   FlatList,
   StyleSheet,
   View,
@@ -30,7 +31,6 @@ export default function TodayScreen() {
   const router = useRouter();
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
-  const tintColor = useThemeColor({}, 'tint');
 
   const { data: households = [] } = useUserHouseholds(user?.uid);
   const householdIds = useMemo(() => households.map((h) => h.id), [households]);
@@ -105,10 +105,10 @@ export default function TodayScreen() {
       <ThemedView style={styles.container}>
         <View style={[styles.header, { borderBottomColor: borderColor }]}>
           <View>
-            <ThemedText type="title">Today&apos;s Chores</ThemedText>
-            <ThemedText style={styles.greeting}>
+            <Typography variant="title">Today&apos;s Chores</Typography>
+            <Typography muted style={styles.greeting}>
               Hello, {user?.displayName || 'there'}!
-            </ThemedText>
+            </Typography>
           </View>
           <Button
             title="Sign Out"
@@ -119,12 +119,7 @@ export default function TodayScreen() {
         </View>
 
         {isLoading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={tintColor} />
-            <ThemedText style={styles.loadingText}>
-              Loading chores...
-            </ThemedText>
-          </View>
+          <LoadingState message="Loading chores..." style={styles.center} />
         ) : (
           <FlatList
             data={todayChores}
@@ -134,14 +129,10 @@ export default function TodayScreen() {
             refreshing={isLoading}
             onRefresh={refetch}
             ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <ThemedText type="subtitle" style={styles.emptyTitle}>
-                  All caught up!
-                </ThemedText>
-                <ThemedText style={styles.emptyMessage}>
-                  No chores due today. Enjoy your free time!
-                </ThemedText>
-              </View>
+              <EmptyState
+                title="All caught up!"
+                message="No chores due today. Enjoy your free time!"
+              />
             }
           />
         )}
@@ -189,11 +180,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
   },
-  greeting: { marginTop: 4, opacity: 0.7 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 12, opacity: 0.7 },
+  greeting: { marginTop: 4 },
+  center: { flex: 1 },
   list: { padding: 16, paddingBottom: 40 },
-  emptyState: { padding: 40, alignItems: 'center' },
-  emptyTitle: { marginBottom: 8 },
-  emptyMessage: { textAlign: 'center', opacity: 0.7, marginTop: 8 },
 });

@@ -4,9 +4,11 @@
  */
 
 import { ChoreCard } from '@/components/chore-card';
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
+import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
 import {
   useCompleteChore,
@@ -21,11 +23,9 @@ import { Chore } from '@/lib/types/chore';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   StyleSheet,
-  View,
 } from 'react-native';
 
 export default function HouseholdChoresScreen() {
@@ -33,7 +33,6 @@ export default function HouseholdChoresScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const backgroundColor = useThemeColor({}, 'background');
-  const tintColor = useThemeColor({}, 'tint');
 
   const { data: household } = useHousehold(householdId);
   const {
@@ -94,19 +93,14 @@ export default function HouseholdChoresScreen() {
               onPress={() => router.push(`/households/${householdId}/settings`)}
               hitSlop={8}
             >
-              <ThemedText style={{ fontSize: 22 }}>⚙</ThemedText>
+              <Typography style={{ fontSize: 22 }}>⚙</Typography>
             </Pressable>
           ),
         }}
       />
       <ThemedView style={[styles.container, { backgroundColor }]}>
         {isLoading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={tintColor} />
-            <ThemedText style={styles.loadingText}>
-              Loading chores...
-            </ThemedText>
-          </View>
+          <LoadingState message="Loading chores..." style={styles.center} />
         ) : (
           <FlatList
             data={sortedChores}
@@ -116,14 +110,10 @@ export default function HouseholdChoresScreen() {
             refreshing={isLoading}
             onRefresh={refetch}
             ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <ThemedText type="subtitle" style={styles.emptyTitle}>
-                  No chores yet
-                </ThemedText>
-                <ThemedText style={styles.emptyMessage}>
-                  Tap the button below to create your first chore.
-                </ThemedText>
-              </View>
+              <EmptyState
+                title="No chores yet"
+                message="Tap the button below to create your first chore."
+              />
             }
           />
         )}
@@ -144,12 +134,8 @@ export default function HouseholdChoresScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 12, opacity: 0.7 },
+  center: { flex: 1 },
   list: { padding: 16, paddingBottom: 80 },
-  emptyState: { padding: 40, alignItems: 'center' },
-  emptyTitle: { marginBottom: 8 },
-  emptyMessage: { textAlign: 'center', opacity: 0.7 },
   fab: {
     position: 'absolute',
     bottom: 24,

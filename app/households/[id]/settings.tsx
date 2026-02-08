@@ -4,9 +4,12 @@
  */
 
 import { HouseholdMemberList } from '@/components/household-member-list';
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors } from '@/constants/theme';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { LoadingState } from '@/components/ui/loading-state';
+import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
 import {
   useCurrentUserMembership,
@@ -20,13 +23,10 @@ import { useDeleteInvite, useHouseholdInvites } from '@/lib/hooks/use-invites';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
-  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -36,11 +36,7 @@ export default function HouseholdSettingsScreen() {
   const router = useRouter();
 
   const backgroundColor = useThemeColor({}, 'background');
-  const borderColor = useThemeColor({}, 'border');
-  const tintColor = useThemeColor({}, 'tint');
   const errorColor = useThemeColor({}, 'error');
-  const textColor = useThemeColor({}, 'text');
-  const inputBg = useThemeColor({}, 'cardBackground');
 
   // ── Queries ──
   const { data: household, isLoading: loadingHousehold } = useHousehold(id);
@@ -149,17 +145,14 @@ export default function HouseholdSettingsScreen() {
   if (loading) {
     return (
       <>
-        <Stack.Screen 
-          options={{ 
+        <Stack.Screen
+          options={{
             title: 'Loading...',
             headerBackTitle: 'Households',
-          }} 
+          }}
         />
         <View style={[styles.container, { backgroundColor }]}>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={tintColor} />
-            <ThemedText style={styles.loadingText}>Loading...</ThemedText>
-          </View>
+          <LoadingState />
         </View>
       </>
     );
@@ -168,17 +161,17 @@ export default function HouseholdSettingsScreen() {
   if (!household || !currentUserMember) {
     return (
       <>
-        <Stack.Screen 
-          options={{ 
+        <Stack.Screen
+          options={{
             title: 'Not Found',
             headerBackTitle: 'Households',
-          }} 
+          }}
         />
         <View style={[styles.container, { backgroundColor }]}>
           <View style={styles.errorContainer}>
-            <ThemedText style={[styles.errorText, { color: errorColor }]}>
+            <Typography color="error" style={styles.errorText}>
               Household not found or you don&apos;t have access
-            </ThemedText>
+            </Typography>
             <Button title="Go Back" onPress={() => router.back()} />
           </View>
         </View>
@@ -188,35 +181,28 @@ export default function HouseholdSettingsScreen() {
 
   return (
     <>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: household.name,
           headerBackTitle: 'Households',
-        }} 
+        }}
       />
       <ScrollView style={[styles.container, { backgroundColor }]}>
         <ThemedView style={styles.content}>
           {/* Household Name Section */}
           <View style={styles.section}>
-            <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+            <Typography variant="sectionTitle" style={styles.sectionTitle}>
               Household Name
-            </ThemedText>
+            </Typography>
             {editingName ? (
               <View>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: inputBg,
-                      borderColor: borderColor,
-                      color: textColor,
-                    },
-                  ]}
+                <Input
                   value={householdName}
                   onChangeText={setHouseholdName}
                   autoFocus
                   maxLength={50}
                   editable={!updateHouseholdMutation.isPending}
+                  containerStyle={styles.inputContainer}
                 />
                 <View style={styles.buttonRow}>
                   <Button
@@ -240,7 +226,7 @@ export default function HouseholdSettingsScreen() {
               </View>
             ) : (
               <View style={styles.nameRow}>
-                <ThemedText type="subtitle">{household.name}</ThemedText>
+                <Typography variant="subtitle">{household.name}</Typography>
                 {isAdmin && (
                   <Button
                     title="Edit"
@@ -268,33 +254,34 @@ export default function HouseholdSettingsScreen() {
           {/* Invitations Section */}
           {isAdmin && invites.length > 0 && (
             <View style={styles.section}>
-              <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+              <Typography variant="sectionTitle" style={styles.sectionTitle}>
                 Pending Invitations ({invites.length})
-              </ThemedText>
+              </Typography>
               {invites.map((invite) => (
-                <ThemedView
+                <Card
                   key={invite.id}
-                  style={[styles.inviteCard, { borderColor }]}
-                  lightColor={Colors.light.cardBackground}
-                  darkColor={Colors.dark.cardBackground}
+                  variant="outlined"
+                  style={styles.inviteCard}
                 >
-                  <View style={styles.inviteInfo}>
-                    <ThemedText type="defaultSemiBold">{invite.invitedEmail}</ThemedText>
-                    <ThemedText style={styles.inviteDetail}>
-                      Role: {invite.role === 'admin' ? 'Admin' : 'Member'}
-                    </ThemedText>
-                    <ThemedText style={styles.inviteDetail}>
-                      Expires: {invite.expiresAt.toDate().toLocaleDateString()}
-                    </ThemedText>
+                  <View style={styles.inviteRow}>
+                    <View style={styles.inviteInfo}>
+                      <Typography variant="bodySemiBold">{invite.invitedEmail}</Typography>
+                      <Typography variant="caption" muted style={styles.inviteDetail}>
+                        Role: {invite.role === 'admin' ? 'Admin' : 'Member'}
+                      </Typography>
+                      <Typography variant="caption" muted style={styles.inviteDetail}>
+                        Expires: {invite.expiresAt.toDate().toLocaleDateString()}
+                      </Typography>
+                    </View>
+                    <Button
+                      title="Cancel"
+                      variant="ghost"
+                      color="danger"
+                      size="sm"
+                      onPress={() => handleDeleteInvite(invite.id)}
+                    />
                   </View>
-                  <Button
-                    title="Cancel"
-                    variant="ghost"
-                    color="danger"
-                    size="sm"
-                    onPress={() => handleDeleteInvite(invite.id)}
-                  />
-                </ThemedView>
+                </Card>
               ))}
             </View>
           )}
@@ -335,15 +322,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    opacity: 0.7,
-  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -359,18 +337,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 12,
-    fontSize: 16,
   },
   nameRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+  inputContainer: {
     marginBottom: 12,
   },
   buttonRow: {
@@ -378,20 +351,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   inviteCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
-    borderWidth: 1,
+  },
+  inviteRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   inviteInfo: {
     flex: 1,
   },
   inviteDetail: {
-    fontSize: 12,
-    opacity: 0.7,
     marginTop: 2,
   },
 });
