@@ -6,7 +6,6 @@
 import { CreateHouseholdModal } from '@/components/create-household-modal';
 import { InvitationCard } from '@/components/invitation-card';
 import { ThemedView } from '@/components/themed-view';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -16,24 +15,25 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { useAllHouseholdChoreStats } from '@/lib/hooks/use-chores';
 import { useUserHouseholds } from '@/lib/hooks/use-households';
 import { useAcceptInvite, useDeclineInvite, usePendingInvites } from '@/lib/hooks/use-invites';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useNetworkStatus } from '@/lib/hooks/use-network-status';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import React, { useMemo, useState } from 'react';
+import { useNavigation, useRouter } from 'expo-router';
+import React, { useLayoutEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HouseholdsScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const navigation = useNavigation();
   const backgroundColor = useThemeColor({}, 'background');
-  const borderColor = useThemeColor({}, 'border');
+  const tintColor = useThemeColor({}, 'tint');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { isOnline } = useNetworkStatus();
 
@@ -49,6 +49,20 @@ export default function HouseholdsScreen() {
 
   const householdIds = useMemo(() => households.map((h) => h.id), [households]);
   const { statsMap } = useAllHouseholdChoreStats(user?.uid, householdIds);
+
+  // Configure header with add button
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => setShowCreateModal(true)}
+          hitSlop={8}
+        >
+          <IconSymbol name="plus" size={22} color={tintColor} />
+        </Pressable>
+      ),
+    });
+  }, [navigation, tintColor]);
 
   const handleHouseholdPress = (householdId: string) => {
     router.push(`/households/${householdId}/chores`);
@@ -90,28 +104,8 @@ export default function HouseholdsScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor }]}
-      edges={user?.emailVerified ? ['top'] : []}
-    >
-      {user?.emailVerified && <StatusBar style="auto" />}
-      <ThemedView style={styles.container}>
-        <View style={[styles.header, { borderBottomColor: borderColor }]}>
-          <View style={styles.headerContent}>
-            <View>
-              <Typography variant="title">My Households</Typography>
-              <Typography muted style={styles.subtitle}>
-                View and manage your households
-              </Typography>
-            </View>
-            <Button
-              title="+ New"
-              size="sm"
-              onPress={() => setShowCreateModal(true)}
-            />
-          </View>
-        </View>
-
+    <>
+      <ThemedView style={[styles.container, { backgroundColor }]}>
         <ScrollView style={styles.content}>
           {/* Pending Invitations Section */}
           {pendingInvites.length > 0 && (
@@ -203,29 +197,13 @@ export default function HouseholdsScreen() {
         onClose={() => setShowCreateModal(false)}
         userId={user?.uid || ''}
       />
-    </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  subtitle: {
-    marginTop: 4,
   },
   content: {
     flex: 1,

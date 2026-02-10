@@ -28,7 +28,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TIME_OPTIONS = [
   '06:00', '07:00', '08:00', '09:00', '10:00',
@@ -122,24 +121,21 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={[]}>
-        <View style={[styles.center, { backgroundColor }]}>
-          <LoadingState />
-        </View>
-      </SafeAreaView>
+      <View style={[styles.center, { backgroundColor }]}>
+        <LoadingState />
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={[]}>
-      <ScrollView
-        style={[styles.container, { backgroundColor }]}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <ThemedView style={styles.content}>
-          <Typography variant="sectionTitle" style={styles.sectionTitle}>
-            Notifications
-          </Typography>
+    <ScrollView
+      style={[styles.container, { backgroundColor }]}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <ThemedView style={styles.content}>
+        <Typography variant="sectionTitle" style={styles.sectionTitle}>
+          Notifications
+        </Typography>
 
           {/* Master toggle */}
           <Card>
@@ -240,8 +236,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         </ThemedView>
-      </ScrollView>
-    </SafeAreaView>
+    </ScrollView>
   );
 }
 
@@ -277,7 +272,6 @@ function SettingRow({
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
   container: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },

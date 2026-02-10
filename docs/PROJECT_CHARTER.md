@@ -11,7 +11,7 @@ Primary use case:
 - Completion is simple, trackable, and attributable
 
 ## Product Principles
-- Offline-first, always usable without connectivity
+- Session-based offline support with in-memory caching
 - Instant-feeling UI with eventual consistency
 - Simple mental model for chores and intervals
 - Shared responsibility without over-complex roles
@@ -36,7 +36,8 @@ Primary use case:
 
 ### Constraints
 - No web app
-- No custom native modules
+- No custom native modules (maintains Expo Go compatibility)
+- Memory-only cache for offline support (tradeoff for Expo Go)
 - Prefer simple, readable code over abstractions
 - Strong typing everywhere
 - Max ~300 LOC per file
@@ -128,23 +129,32 @@ Rules:
 
 ---
 
-## Offline-First Behavior
+## Offline Behavior
 
-### Offline Capabilities
-When offline, users can:
-- Create chores
-- Edit chores and intervals
-- Mark chores complete or undo completion
+### Session-Based Offline Support
+Within an active app session, users can work offline with previously loaded data:
+- View cached chores and household data
+- Create chores (queued for sync)
+- Edit chores and intervals (queued for sync)
+- Mark chores complete or undo completion (queued for sync)
 
-When offline, users cannot:
-- Invite users
-- Accept household invites
+### Limitations
+- **Cache is memory-only**: Data does not persist between app restarts
+- **Requires initial online load**: First launch or after restart requires network connection
+- **Session-scoped**: Offline capabilities only work during current app session
+- Users cannot invite or accept household invites while offline
+
+### Technical Constraint
+Persistent offline cache requires native modules which conflicts with Expo Go compatibility.
+To enable full offline-first persistence, app would need to migrate to @react-native-firebase
+and use development builds (EAS Build).
 
 ### Sync Model
 - UI updates optimistically
 - Firestore is the source of truth
 - Last-write-wins conflict resolution is acceptable
 - Eventual consistency is expected and acceptable
+- Queued writes sync when connection is restored
 
 ---
 

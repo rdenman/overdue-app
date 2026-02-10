@@ -8,7 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
-import { Typography } from '@/components/ui/typography';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/lib/hooks/use-auth';
 import {
   useCompleteChore,
@@ -33,6 +33,7 @@ export default function HouseholdChoresScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const backgroundColor = useThemeColor({}, 'background');
+  const tintColor = useThemeColor({}, 'tint');
 
   const { data: household } = useHousehold(householdId);
   const {
@@ -91,9 +92,9 @@ export default function HouseholdChoresScreen() {
           headerRight: () => (
             <Pressable
               onPress={() => router.push(`/households/${householdId}/settings`)}
-              hitSlop={8}
+              style={{ padding: 4 }}
             >
-              <Typography style={{ fontSize: 22 }}>⚙</Typography>
+              <IconSymbol name="gearshape.fill" size={22} color={tintColor} />
             </Pressable>
           ),
         }}

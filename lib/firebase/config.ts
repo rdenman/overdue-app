@@ -15,8 +15,6 @@ import {
 import {
   getFirestore,
   initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
   type Firestore,
 } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
@@ -59,14 +57,13 @@ try {
   auth = getAuth(app);
 }
 
-// Initialize Firestore with offline persistence
+// Initialize Firestore with memory cache
+// Note: Persistent offline cache requires native modules (@react-native-firebase)
+// Memory cache provides offline access during app session only (data cleared on restart)
 let firestore: Firestore;
 try {
-  firestore = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager(),
-    }),
-  });
+  // Default memory cache - works in Expo Go, no native modules required
+  firestore = initializeFirestore(app, {});
 } catch (error) {
   // If already initialized, just get the existing instance
   firestore = getFirestore(app);

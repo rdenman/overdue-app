@@ -3,11 +3,11 @@ import { AuthProvider, useAuthContext } from '@/lib/contexts/auth-context';
 import { SyncProvider } from '@/lib/contexts/sync-context';
 import { queryClient } from '@/lib/query-client';
 import {
-  configureNotificationHandler,
-  requestPermissions,
+    configureNotificationHandler,
+    requestPermissions,
 } from '@/lib/services/notification-service';
-import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
