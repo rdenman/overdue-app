@@ -51,7 +51,7 @@ export function Button({
   const tintColor = useThemeColor({}, 'tint');
   const errorColor = useThemeColor({}, 'error');
   const successColor = useThemeColor({}, 'success');
-  const borderThemeColor = useThemeColor({}, 'border');
+  // TODO add contrast text color to theme
   const contrastTextColor = useThemeColor({ light: '#fff', dark: '#000' }, 'text');
 
   // Resolve the semantic color to an actual value

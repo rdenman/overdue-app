@@ -5,6 +5,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { resendVerificationEmail } from '@/lib/services/auth-service';
 import React, { useState } from 'react';
 import {
@@ -17,6 +18,12 @@ import {
 export function EmailVerificationBanner() {
   const { user } = useAuth();
   const [sending, setSending] = useState(false);
+  
+  const warningBackground = useThemeColor({}, 'warningBackground');
+  const warningBorder = useThemeColor({}, 'warningBorder');
+  const warningText = useThemeColor({}, 'warningText');
+  const warningButtonBackground = useThemeColor({}, 'warningButtonBackground');
+  const buttonText = useThemeColor({}, 'buttonText');
 
   if (!user || user.emailVerified) {
     return null;
@@ -35,9 +42,9 @@ export function EmailVerificationBanner() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: warningBackground, borderBottomColor: warningBorder }]}>
       <View style={styles.content}>
-        <Text style={styles.text}>
+        <Text style={[styles.text, { color: warningText }]}>
           ⚠️ Please verify your email address
         </Text>
         <Button
@@ -47,8 +54,8 @@ export function EmailVerificationBanner() {
           onPress={handleResendEmail}
           loading={sending}
           disabled={sending}
-          style={styles.button}
-          textStyle={styles.buttonText}
+          style={[styles.button, { backgroundColor: warningButtonBackground, borderColor: warningBorder }]}
+          textStyle={[styles.buttonText, { color: buttonText }]}
         />
       </View>
     </View>
@@ -57,9 +64,7 @@ export function EmailVerificationBanner() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFF3CD',
     borderBottomWidth: 1,
-    borderBottomColor: '#FFE69C',
   },
   content: {
     flexDirection: 'row',
@@ -71,14 +76,9 @@ const styles = StyleSheet.create({
   text: {
     flex: 1,
     fontSize: 14,
-    color: '#856404',
   },
   button: {
-    backgroundColor: '#fff',
-    borderColor: '#FFE69C',
     minWidth: 100,
   },
-  buttonText: {
-    color: '#007AFF',
-  },
+  buttonText: {},
 });

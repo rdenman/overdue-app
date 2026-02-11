@@ -60,6 +60,7 @@ export function Chip({
   const successColor = useThemeColor({}, 'success');
   const borderThemeColor = useThemeColor({}, 'border');
   const textThemeColor = useThemeColor({}, 'text');
+  // TODO add contrast text color to theme
   const contrastTextColor = useThemeColor({ light: '#fff', dark: '#000' }, 'text');
 
   // Resolve semantic color (same mapping as Button)

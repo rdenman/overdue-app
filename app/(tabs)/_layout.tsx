@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -9,6 +9,7 @@ import { useThemeColor } from '@/lib/hooks/use-theme-color';
 
 export default function TabLayout() {
   const tintColor = useThemeColor({}, 'tint');
+  const dangerColor = useThemeColor({}, 'error');
   const { user } = useAuth();
   const showVerificationBadge = user && !user.emailVerified;
 
@@ -42,7 +43,7 @@ export default function TabLayout() {
             <View>
               <IconSymbol size={28} name="gearshape.fill" color={color} />
               {showVerificationBadge && (
-                <View style={styles.badge} />
+                <View style={[styles.badge, { backgroundColor: dangerColor }]} />
               )}
             </View>
           ),
@@ -60,6 +61,5 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FF3B30',
   },
 });

@@ -24,6 +24,10 @@ export const Colors = {
     success: '#2e7d32',
     badgeBackground: '#007AFF',
     badgeText: '#fff',
+    warningBackground: '#FFF3CD',
+    warningBorder: '#FFE69C',
+    warningText: '#856404',
+    warningButtonBackground: '#fff',
   },
   dark: {
     text: '#ECEDEE',
@@ -40,6 +44,10 @@ export const Colors = {
     success: '#66bb6a',
     badgeBackground: '#0a84ff',
     badgeText: '#fff',
+    warningBackground: '#5A4A1F',
+    warningBorder: '#6B5A2F',
+    warningText: '#FFE69C',
+    warningButtonBackground: '#2c2c2e',
   },
 };
 

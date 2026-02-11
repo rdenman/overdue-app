@@ -150,6 +150,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   checkmark: {
+    // TODO should use a theme color
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',
