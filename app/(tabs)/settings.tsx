@@ -10,6 +10,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { Typography } from '@/components/ui/typography';
 import { useNotificationSettings } from '@/lib/hooks/use-notification-settings';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
+import { useTheme } from '@/lib/contexts/theme-context';
 import {
   cancelAllNotifications,
   requestPermissions,
@@ -44,12 +45,15 @@ function formatTime(time: string): string {
 }
 
 export default function SettingsScreen() {
+  const { theme, toggleTheme } = useTheme();
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const accentColor = useThemeColor({}, 'badgeBackground');
   const accentTextColor = useThemeColor({}, 'badgeText');
   const textColor = useThemeColor({}, 'text');
   const dangerColor = useThemeColor({}, 'error');
+  const buttonBackground = useThemeColor({}, 'buttonBackground');
+  const iconColor = useThemeColor({}, 'icon');
   const { settings, updateSettings, loading } = useNotificationSettings();
   const [showTimePicker, setShowTimePicker] = useState(false);
 
@@ -135,6 +139,23 @@ export default function SettingsScreen() {
     >
       <EmailVerificationBanner />
       <ThemedView style={styles.content}>
+        {/* Appearance section */}
+        <Typography variant="sectionTitle" style={styles.sectionTitle}>
+          Appearance
+        </Typography>
+        <Card>
+          <SettingRow
+            label="Dark Mode"
+            description={`Currently using ${theme === 'dark' ? 'dark' : 'light'} mode`}
+            value={theme === 'dark'}
+            onToggle={toggleTheme}
+            accentColor={accentColor}
+            inactiveTrackColor={buttonBackground}
+            thumbColor={backgroundColor}
+            inactiveThumbColor={iconColor}
+          />
+        </Card>
+
         <Typography variant="sectionTitle" style={styles.sectionTitle}>
           Notifications
         </Typography>
@@ -147,6 +168,9 @@ export default function SettingsScreen() {
               value={settings.enabled}
               onToggle={handleToggleEnabled}
               accentColor={accentColor}
+              inactiveTrackColor={buttonBackground}
+              thumbColor={backgroundColor}
+              inactiveThumbColor={iconColor}
             />
           </Card>
 
@@ -163,6 +187,9 @@ export default function SettingsScreen() {
                   value={settings.dailyReminderEnabled}
                   onToggle={handleToggleDailyReminder}
                   accentColor={accentColor}
+                  inactiveTrackColor={buttonBackground}
+                  thumbColor={backgroundColor}
+                  inactiveThumbColor={iconColor}
                 />
                 {settings.dailyReminderEnabled && (
                   <View style={[styles.timeRow, { borderTopColor: borderColor }]}>
@@ -220,6 +247,9 @@ export default function SettingsScreen() {
                   value={settings.choreAlertsEnabled}
                   onToggle={handleToggleChoreAlerts}
                   accentColor={accentColor}
+                  inactiveTrackColor={buttonBackground}
+                  thumbColor={backgroundColor}
+                  inactiveThumbColor={iconColor}
                 />
               </Card>
             </>
@@ -248,12 +278,18 @@ function SettingRow({
   value,
   onToggle,
   accentColor,
+  inactiveTrackColor,
+  thumbColor,
+  inactiveThumbColor,
 }: {
   label: string;
   description: string;
   value: boolean;
   onToggle: (value: boolean) => void;
   accentColor: string;
+  inactiveTrackColor: string;
+  thumbColor: string;
+  inactiveThumbColor: string;
 }) {
   return (
     <View style={styles.settingRow}>
@@ -266,8 +302,8 @@ function SettingRow({
       <Switch
         value={value}
         onValueChange={onToggle}
-        trackColor={{ false: '#767577', true: accentColor }}
-        thumbColor={value ? '#fff' : '#f4f3f4'}
+        trackColor={{ false: inactiveTrackColor, true: accentColor }}
+        thumbColor={value ? thumbColor : inactiveThumbColor}
       />
     </View>
   );

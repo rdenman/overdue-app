@@ -1,17 +1,17 @@
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthProvider, useAuthContext } from '@/lib/contexts/auth-context';
 import { SyncProvider } from '@/lib/contexts/sync-context';
+import { ThemeProvider as CustomThemeProvider, useTheme } from '@/lib/contexts/theme-context';
 import { queryClient } from '@/lib/query-client';
 import {
     configureNotificationHandler,
     requestPermissions,
 } from '@/lib/services/notification-service';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
-import { useColorScheme } from 'react-native';
 import 'react-native-reanimated';
 
 // Configure notification handler once at module level
@@ -22,7 +22,7 @@ export const unstable_settings = {
 };
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const { theme } = useTheme();
   const { user, loading } = useAuthContext();
   const segments = useSegments();
   const router = useRouter();
@@ -48,7 +48,7 @@ function RootLayoutNav() {
   }, [router, user, loading, segments]);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <NavigationThemeProvider value={theme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -56,7 +56,7 @@ function RootLayoutNav() {
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
-    </ThemeProvider>
+    </NavigationThemeProvider>
   );
 }
 
@@ -64,11 +64,13 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <SyncProvider>
-            <RootLayoutNav />
-          </SyncProvider>
-        </AuthProvider>
+        <CustomThemeProvider>
+          <AuthProvider>
+            <SyncProvider>
+              <RootLayoutNav />
+            </SyncProvider>
+          </AuthProvider>
+        </CustomThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

@@ -16,11 +16,12 @@ import {
 } from '@/lib/hooks/use-chores';
 import { useUserHouseholds } from '@/lib/hooks/use-households';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
+import { useTheme } from '@/lib/contexts/theme-context';
 import { isChoreOverdue } from '@/lib/services/chore-service';
 import { Chore } from '@/lib/types/chore';
 import { Stack, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View, useColorScheme } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { Calendar, type DateData } from 'react-native-calendars';
 
 function toDateString(date: Date): string {
@@ -33,7 +34,7 @@ function toDateString(date: Date): string {
 export default function CalendarScreen() {
   const { user } = useAuth();
   const router = useRouter();
-  const colorScheme = useColorScheme();
+  const { theme } = useTheme();
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const tintColor = useThemeColor({}, 'tint');
@@ -103,10 +104,10 @@ export default function CalendarScreen() {
       textSectionTitleColor: textColor,
       todayTextColor: tintColor,
       arrowColor: tintColor,
-      selectedDayTextColor: colorScheme === 'dark' ? '#000' : '#fff',
-      textDisabledColor: colorScheme === 'dark' ? '#555' : '#ccc',
+      selectedDayTextColor: theme === 'dark' ? '#000' : '#fff',
+      textDisabledColor: theme === 'dark' ? '#555' : '#ccc',
     }),
-    [backgroundColor, textColor, tintColor, colorScheme]
+    [backgroundColor, textColor, tintColor, theme]
   );
 
   const renderChore = useCallback(
