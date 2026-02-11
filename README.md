@@ -172,6 +172,12 @@ pnpm lint
 
 # Type check
 pnpm tsc --noEmit
+
+# Seed test data (creates test users, households, and chores)
+pnpm seed
+
+# Clean up test data (removes all test users and their data)
+pnpm cleanup
 ```
 
 ### Code Style Guidelines
@@ -184,6 +190,31 @@ This project follows strict guidelines (see [`.cursor/rules.md`](.cursor/rules.m
 - **Offline-first** - UI must work without network
 - **No future-proofing** - Build only what's needed now
 - **Follow the charter** - All features must be in [`docs/PROJECT_CHARTER.md`](docs/PROJECT_CHARTER.md)
+
+### Test Data for Development
+
+For local development, you can quickly populate your database with realistic test data:
+
+```bash
+# Create test users, households, and chores
+pnpm seed
+```
+
+This creates:
+- **3 test users:** test1@test.com, test2@test.com, test3@test.com (password: `Password1!`)
+- **Personal households** for each user
+- **Family household** with all 3 users
+- **Parents household** with 2 users
+- **20-30 chores per household** with variety in due dates, assignments, and intervals
+
+When you're done testing:
+
+```bash
+# Remove all test data
+pnpm cleanup
+```
+
+See [`scripts/README.md`](scripts/README.md) for more details.
 
 ### Testing User Flows
 
