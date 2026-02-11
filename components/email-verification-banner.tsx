@@ -3,22 +3,19 @@
  * Displays a warning banner for unverified users with option to resend verification email
  */
 
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { resendVerificationEmail } from '@/lib/services/auth-service';
-import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   Alert,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function EmailVerificationBanner() {
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
   const [sending, setSending] = useState(false);
 
   if (!user || user.emailVerified) {
@@ -38,26 +35,23 @@ export function EmailVerificationBanner() {
   };
 
   return (
-    <>
-      <StatusBar style="dark" />
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.content}>
-          <Text style={styles.text}>
-            ⚠️ Please verify your email address
-          </Text>
-          <Button
-            title="Resend Email"
-            variant="outlined"
-            size="sm"
-            onPress={handleResendEmail}
-            loading={sending}
-            disabled={sending}
-            style={styles.button}
-            textStyle={styles.buttonText}
-          />
-        </View>
+    <View style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.text}>
+          ⚠️ Please verify your email address
+        </Text>
+        <Button
+          title="Resend Email"
+          variant="outlined"
+          size="sm"
+          onPress={handleResendEmail}
+          loading={sending}
+          disabled={sending}
+          style={styles.button}
+          textStyle={styles.buttonText}
+        />
       </View>
-    </>
+    </View>
   );
 }
 

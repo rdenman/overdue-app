@@ -3,6 +3,7 @@
  * Notification settings and sign-out
  */
 
+import { EmailVerificationBanner } from '@/components/email-verification-banner';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
@@ -132,6 +133,7 @@ export default function SettingsScreen() {
       style={[styles.container, { backgroundColor }]}
       contentContainerStyle={styles.scrollContent}
     >
+      <EmailVerificationBanner />
       <ThemedView style={styles.content}>
         <Typography variant="sectionTitle" style={styles.sectionTitle}>
           Notifications
