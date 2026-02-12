@@ -33,10 +33,13 @@ export interface ChoreEditFormProps {
   setIntervalValue: (v: string) => void;
   assignedTo: string | undefined;
   setAssignedTo: (v: string | undefined) => void;
+  roomId: string | undefined;
+  setRoomId: (v: string | undefined) => void;
   dueDate: Date | null;
   setDueDate: (v: Date | null) => void;
   members: { userId: string }[];
   profiles: (null | { displayName: string })[];
+  rooms: { id: string; name: string }[];
   onSave: () => void;
   onCancel: () => void;
   saving: boolean;
@@ -46,8 +49,8 @@ export function ChoreEditForm(props: ChoreEditFormProps) {
   const {
     name, setName, description, setDescription,
     intervalType, setIntervalType, intervalValue, setIntervalValue,
-    assignedTo, setAssignedTo, dueDate, setDueDate,
-    members, profiles,
+    assignedTo, setAssignedTo, roomId, setRoomId, dueDate, setDueDate,
+    members, profiles, rooms,
     onSave, onCancel, saving,
   } = props;
 
@@ -157,6 +160,21 @@ export function ChoreEditForm(props: ChoreEditFormProps) {
             label={profiles[i]?.displayName ?? 'User'}
             selected={assignedTo === m.userId}
             onPress={() => setAssignedTo(m.userId)}
+          />
+        ))}
+      </View>
+      <View style={styles.chips}>
+        <Chip
+          label="None"
+          selected={!roomId}
+          onPress={() => setRoomId(undefined)}
+        />
+        {rooms.map((room) => (
+          <Chip
+            key={room.id}
+            label={room.name}
+            selected={roomId === room.id}
+            onPress={() => setRoomId(room.id)}
           />
         ))}
       </View>

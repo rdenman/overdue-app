@@ -12,12 +12,14 @@ import {
 import { Chore } from '../types/chore';
 import { Household, HouseholdMember } from '../types/household';
 import { HouseholdInvite } from '../types/invite';
+import { Room } from '../types/room';
 import { User } from '../types/user';
 import {
   ChoreDocument,
   HouseholdDocument,
   HouseholdMemberDocument,
   InviteDocument,
+  RoomDocument,
   UserDocument,
 } from './types';
 
@@ -108,6 +110,38 @@ export const householdMemberConverter: FirestoreDataConverter<HouseholdMember> =
 };
 
 /**
+ * Room converter
+ */
+export const roomConverter: FirestoreDataConverter<Room> = {
+  toFirestore(room: Room): DocumentData {
+    return {
+      id: room.id,
+      householdId: room.householdId,
+      name: room.name,
+      isDefault: room.isDefault,
+      sortOrder: room.sortOrder,
+      createdAt: room.createdAt,
+      updatedAt: room.updatedAt,
+    };
+  },
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot,
+    options: SnapshotOptions
+  ): Room {
+    const data = snapshot.data(options) as RoomDocument;
+    return {
+      id: data.id,
+      householdId: data.householdId,
+      name: data.name,
+      isDefault: data.isDefault,
+      sortOrder: data.sortOrder,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    };
+  },
+};
+
+/**
  * Chore converter
  */
 export const choreConverter: FirestoreDataConverter<Chore> = {
@@ -126,6 +160,7 @@ export const choreConverter: FirestoreDataConverter<Chore> = {
 
     if (chore.description !== undefined) data.description = chore.description;
     if (chore.assignedTo !== undefined) data.assignedTo = chore.assignedTo;
+    if (chore.roomId !== undefined) data.roomId = chore.roomId;
     if (chore.lastCompletion !== undefined) data.lastCompletion = chore.lastCompletion;
 
     return data;
@@ -141,6 +176,7 @@ export const choreConverter: FirestoreDataConverter<Chore> = {
       name: data.name,
       description: data.description,
       assignedTo: data.assignedTo,
+      roomId: data.roomId,
       createdBy: data.createdBy,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,

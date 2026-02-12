@@ -18,6 +18,8 @@ interface ChoreCardProps {
   assigneeName?: string;
   /** Household name — shown when listing across households (Today view) */
   householdName?: string;
+  /** Room name — shown to indicate chore location */
+  roomName?: string;
   onPress?: () => void;
   onComplete?: () => void;
   onUndo?: () => void;
@@ -46,6 +48,7 @@ export function ChoreCard({
   chore,
   assigneeName,
   householdName,
+  roomName,
   onPress,
   onComplete,
   onUndo,
@@ -113,6 +116,12 @@ export function ChoreCard({
             {householdName ? (
               <Typography variant="caption" muted numberOfLines={1} style={styles.metaItem}>
                 · {householdName}
+              </Typography>
+            ) : null}
+
+            {roomName ? (
+              <Typography variant="caption" muted numberOfLines={1} style={styles.metaItem}>
+                · {roomName}
               </Typography>
             ) : null}
           </View>

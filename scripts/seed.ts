@@ -48,34 +48,60 @@ const TEST_USERS = [
   { email: 'test3@test.com', password: 'Password1!', displayName: 'Test User 3' },
 ];
 
-// Chore name templates for variety
-const CHORE_NAMES = [
-  'Take out trash',
-  'Do laundry',
-  'Vacuum living room',
-  'Clean bathroom',
-  'Water plants',
-  'Wash dishes',
-  'Mop floors',
-  'Dust shelves',
-  'Clean kitchen',
-  'Change bed sheets',
-  'Clean windows',
-  'Organize closet',
-  'Wipe counters',
-  'Empty dishwasher',
-  'Clean fridge',
-  'Sweep garage',
-  'Clean mirrors',
-  'Take out recycling',
-  'Vacuum bedroom',
-  'Tidy living room',
-  'Clean oven',
-  'Sanitize doorknobs',
-  'Clean microwave',
-  'Organize pantry',
-  'Scrub sink',
-];
+// Chore name templates for variety, grouped by room
+const CHORE_NAMES_BY_ROOM: Record<string, string[]> = {
+  'Living Room': [
+    'Vacuum living room',
+    'Dust shelves',
+    'Tidy living room',
+    'Clean windows',
+    'Organize bookshelf',
+  ],
+  'Kitchen': [
+    'Wash dishes',
+    'Wipe counters',
+    'Empty dishwasher',
+    'Clean fridge',
+    'Clean oven',
+    'Clean microwave',
+    'Organize pantry',
+    'Scrub sink',
+    'Mop kitchen floor',
+  ],
+  'Bathroom': [
+    'Clean bathroom',
+    'Clean mirrors',
+    'Scrub toilet',
+    'Clean shower',
+    'Refill toiletries',
+  ],
+  'Bedroom': [
+    'Change bed sheets',
+    'Vacuum bedroom',
+    'Organize closet',
+    'Dust bedroom',
+  ],
+  'Garage': [
+    'Sweep garage',
+    'Organize tools',
+    'Take out recycling',
+    'Sort storage bins',
+  ],
+  'Office': [
+    'Organize desk',
+    'Dust electronics',
+    'File papers',
+    'Vacuum office',
+  ],
+  'None': [
+    'Take out trash',
+    'Do laundry',
+    'Water plants',
+    'Sanitize doorknobs',
+    'Replace air filters',
+    'Check smoke detectors',
+  ],
+};
 
 const DESCRIPTIONS = [
   'Make sure to use the right cleaning products',
@@ -107,7 +133,7 @@ const INTERVALS: IntervalType[] = [
   { type: 'once', value: 1 },    // One-off chore
 ];
 
-// One-off chore names
+// One-off chore names (typically not room-specific)
 const ONE_OFF_CHORE_NAMES = [
   'Replace front door',
   'Fix leaky faucet',
@@ -115,6 +141,19 @@ const ONE_OFF_CHORE_NAMES = [
   'Install new shelves',
   'Fix broken fence',
   'Replace smoke detector batteries',
+];
+
+// Room configurations
+const DEFAULT_ROOMS = [
+  { name: 'Living Room', sortOrder: 1, isDefault: true },
+  { name: 'Kitchen', sortOrder: 2, isDefault: true },
+  { name: 'Bathroom', sortOrder: 3, isDefault: true },
+  { name: 'Bedroom', sortOrder: 4, isDefault: true },
+];
+
+const CUSTOM_ROOMS = [
+  { name: 'Garage', sortOrder: 5, isDefault: false },
+  { name: 'Office', sortOrder: 6, isDefault: false },
 ];
 
 // Helper to calculate due date
@@ -187,8 +226,48 @@ async function getOrCreateUser(email: string, password: string, displayName: str
   }
 }
 
+// Create rooms for a household
+async function createRooms(householdId: string, includeCustom: boolean = false) {
+  const now = Timestamp.now();
+  const roomIds: Record<string, string> = {};
+  
+  // Create default rooms
+  for (const room of DEFAULT_ROOMS) {
+    const roomRef = doc(collection(firestore, 'households', householdId, 'rooms'));
+    await setDoc(roomRef, {
+      id: roomRef.id,
+      householdId,
+      name: room.name,
+      isDefault: room.isDefault,
+      sortOrder: room.sortOrder,
+      createdAt: now,
+      updatedAt: now,
+    });
+    roomIds[room.name] = roomRef.id;
+  }
+  
+  // Optionally create custom rooms
+  if (includeCustom) {
+    for (const room of CUSTOM_ROOMS) {
+      const roomRef = doc(collection(firestore, 'households', householdId, 'rooms'));
+      await setDoc(roomRef, {
+        id: roomRef.id,
+        householdId,
+        name: room.name,
+        isDefault: room.isDefault,
+        sortOrder: room.sortOrder,
+        createdAt: now,
+        updatedAt: now,
+      });
+      roomIds[room.name] = roomRef.id;
+    }
+  }
+  
+  return roomIds;
+}
+
 // Create a household
-async function createHousehold(name: string, ownerId: string, memberIds: string[]) {
+async function createHousehold(name: string, ownerId: string, memberIds: string[], includeCustomRooms: boolean = false) {
   console.log(`\n🏠 Creating household: ${name}`);
   
   const householdRef = doc(collection(firestore, 'households'));
@@ -221,7 +300,12 @@ async function createHousehold(name: string, ownerId: string, memberIds: string[
   
   console.log(`✓ Added ${memberIds.length} member(s) to ${name}`);
   
-  return householdRef.id;
+  // Create rooms
+  const roomIds = await createRooms(householdRef.id, includeCustomRooms);
+  const roomCount = Object.keys(roomIds).length;
+  console.log(`✓ Created ${roomCount} room(s) for ${name}`);
+  
+  return { householdId: householdRef.id, roomIds };
 }
 
 // Create chores for a household
@@ -229,6 +313,7 @@ async function createChores(
   householdId: string,
   householdName: string,
   userIds: string[],
+  roomIds: Record<string, string>,
   count: number
 ) {
   console.log(`\n🧹 Creating ${count} chores for ${householdName}`);
@@ -239,12 +324,16 @@ async function createChores(
   let futureCount = 0;
   let oneOffCount = 0;
   let overriddenCount = 0;
+  let withRoomCount = 0;
   
   // Get current authenticated user to use as createdBy for all chores
   const currentUserId = auth.currentUser?.uid;
   if (!currentUserId) {
     throw new Error('No authenticated user for creating chores');
   }
+  
+  // Get all available room names for this household
+  const availableRoomNames = Object.keys(roomIds);
   
   for (let i = 0; i < count; i++) {
     const choreRef = doc(collection(firestore, 'chores'));
@@ -254,16 +343,39 @@ async function createChores(
     const interval = INTERVALS[i % INTERVALS.length];
     const isOneOff = interval.type === 'once';
 
-    // Use one-off names for one-off intervals, regular names for others
-    const name = isOneOff
-      ? ONE_OFF_CHORE_NAMES[i % ONE_OFF_CHORE_NAMES.length]
-      : CHORE_NAMES[i % CHORE_NAMES.length];
+    // Pick a room (80% chance of having a room, 20% no room)
+    let roomName: string | null = null;
+    let name: string;
+    
+    if (isOneOff) {
+      // One-off chores usually don't have rooms
+      name = ONE_OFF_CHORE_NAMES[i % ONE_OFF_CHORE_NAMES.length];
+      roomName = null;
+    } else {
+      // For recurring chores, pick a room
+      if (Math.random() < 0.8) {
+        // 80% chance: pick a room from available rooms
+        const filteredRoomNames = availableRoomNames.filter(name => name !== 'None');
+        roomName = filteredRoomNames[i % filteredRoomNames.length];
+      } else {
+        // 20% chance: no room
+        roomName = 'None';
+      }
+      
+      // Pick a chore name appropriate for this room
+      const choreList = CHORE_NAMES_BY_ROOM[roomName];
+      name = choreList[i % choreList.length];
+    }
+    
     const description = DESCRIPTIONS[i % DESCRIPTIONS.length] || undefined;
-    // All chores created by the currently authenticated user
     const createdBy = currentUserId;
     
     // Assign some chores, leave some unassigned
     const assignedTo = i % 3 === 0 ? undefined : userIds[i % userIds.length];
+    
+    // Get roomId (if room is assigned and not "None")
+    const roomId = roomName && roomName !== 'None' ? roomIds[roomName] : undefined;
+    if (roomId) withRoomCount++;
     
     let dueAt: Timestamp | null;
     let isOverdueFlag: boolean;
@@ -340,6 +452,9 @@ async function createChores(
     if (assignedTo) {
       chore.assignedTo = assignedTo;
     }
+    if (roomId) {
+      chore.roomId = roomId;
+    }
     
     await setDoc(choreRef, chore);
   }
@@ -350,6 +465,7 @@ async function createChores(
   console.log(`  - ${futureCount} due in the future`);
   console.log(`  - ${oneOffCount} one-off (${oneOffCount > 0 ? 'some with no deadline' : ''})`);
   console.log(`  - ${overriddenCount} with overridden due dates`);
+  console.log(`  - ${withRoomCount} assigned to rooms`);
 }
 
 // Main seeding function
@@ -377,30 +493,32 @@ async function seed() {
     console.log('\n━━━ Step 2: Creating Personal Households ━━━');
     
     await signInWithEmailAndPassword(auth, TEST_USERS[0].email, TEST_USERS[0].password);
-    const personal1Id = await createHousehold('Personal', user1Id, [user1Id]);
+    const personal1 = await createHousehold('Personal', user1Id, [user1Id], false);
     
     await signInWithEmailAndPassword(auth, TEST_USERS[1].email, TEST_USERS[1].password);
-    const personal2Id = await createHousehold('Personal', user2Id, [user2Id]);
+    const personal2 = await createHousehold('Personal', user2Id, [user2Id], false);
     
     await signInWithEmailAndPassword(auth, TEST_USERS[2].email, TEST_USERS[2].password);
-    const personal3Id = await createHousehold('Personal', user3Id, [user3Id]);
+    const personal3 = await createHousehold('Personal', user3Id, [user3Id], false);
     
-    // Step 3: Create Family household (all 3 users) - sign in as user 1 (owner)
+    // Step 3: Create Family household (all 3 users) with custom rooms - sign in as user 1 (owner)
     console.log('\n━━━ Step 3: Creating Family Household ━━━');
     await signInWithEmailAndPassword(auth, TEST_USERS[0].email, TEST_USERS[0].password);
-    const familyId = await createHousehold(
+    const family = await createHousehold(
       'Family',
       user1Id,
-      [user1Id, user2Id, user3Id]
+      [user1Id, user2Id, user3Id],
+      true // Include custom rooms
     );
     
-    // Step 4: Create Parents household (users 1 and 2) - sign in as user 1 (owner)
+    // Step 4: Create Parents household (users 1 and 2) with custom rooms - sign in as user 1 (owner)
     console.log('\n━━━ Step 4: Creating Parents Household ━━━');
     await signInWithEmailAndPassword(auth, TEST_USERS[0].email, TEST_USERS[0].password);
-    const parentsId = await createHousehold(
+    const parents = await createHousehold(
       'Parents',
       user1Id,
-      [user1Id, user2Id]
+      [user1Id, user2Id],
+      true // Include custom rooms
     );
     
     // Step 5: Create chores for each household
@@ -408,28 +526,48 @@ async function seed() {
     
     // Personal households: 20-25 chores each - sign in as the household owner
     await signInWithEmailAndPassword(auth, TEST_USERS[0].email, TEST_USERS[0].password);
-    await createChores(personal1Id, 'Personal (User 1)', [user1Id], 20 + Math.floor(Math.random() * 6));
+    await createChores(
+      personal1.householdId,
+      'Personal (User 1)',
+      [user1Id],
+      personal1.roomIds,
+      20 + Math.floor(Math.random() * 6)
+    );
     
     await signInWithEmailAndPassword(auth, TEST_USERS[1].email, TEST_USERS[1].password);
-    await createChores(personal2Id, 'Personal (User 2)', [user2Id], 20 + Math.floor(Math.random() * 6));
+    await createChores(
+      personal2.householdId,
+      'Personal (User 2)',
+      [user2Id],
+      personal2.roomIds,
+      20 + Math.floor(Math.random() * 6)
+    );
     
     await signInWithEmailAndPassword(auth, TEST_USERS[2].email, TEST_USERS[2].password);
-    await createChores(personal3Id, 'Personal (User 3)', [user3Id], 20 + Math.floor(Math.random() * 6));
+    await createChores(
+      personal3.householdId,
+      'Personal (User 3)',
+      [user3Id],
+      personal3.roomIds,
+      20 + Math.floor(Math.random() * 6)
+    );
     
     // Family household: 25-30 chores - sign in as owner (user 1)
     await signInWithEmailAndPassword(auth, TEST_USERS[0].email, TEST_USERS[0].password);
     await createChores(
-      familyId,
+      family.householdId,
       'Family',
       [user1Id, user2Id, user3Id],
+      family.roomIds,
       25 + Math.floor(Math.random() * 6)
     );
     
     // Parents household: 25-30 chores - sign in as owner (user 1)
     await createChores(
-      parentsId,
+      parents.householdId,
       'Parents',
       [user1Id, user2Id],
+      parents.roomIds,
       25 + Math.floor(Math.random() * 6)
     );
     

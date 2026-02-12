@@ -24,6 +24,7 @@ import {
   HouseholdMemberCreateInput,
   HouseholdUpdateInput,
 } from '../types/household';
+import { createDefaultRooms } from './room-service';
 
 /**
  * Create a new household
@@ -52,6 +53,9 @@ export async function createHousehold(input: HouseholdCreateInput): Promise<Hous
       userId: input.ownerId,
       role: 'admin',
     });
+    
+    // Create default rooms for the household
+    await createDefaultRooms(household.id);
     
     return household;
   } catch (error) {
@@ -294,6 +298,13 @@ export async function deleteHousehold(
     const choresSnap = await getDocs(choresQuery);
     for (const choreDoc of choresSnap.docs) {
       await deleteDoc(choreDoc.ref);
+    }
+
+    // Delete all rooms in the household
+    const roomsRef = collection(firestore, 'households', householdId, 'rooms');
+    const roomsSnap = await getDocs(roomsRef);
+    for (const roomDoc of roomsSnap.docs) {
+      await deleteDoc(roomDoc.ref);
     }
 
     // Delete all household members, but delete the owner's membership last

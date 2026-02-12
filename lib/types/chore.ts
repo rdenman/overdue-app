@@ -30,6 +30,7 @@ export interface Chore {
   name: string;
   description?: string;
   assignedTo?: string; // userId or undefined for unassigned
+  roomId?: string; // Optional room assignment for location-based organization
   createdBy: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -44,6 +45,7 @@ export interface ChoreCreateInput {
   name: string;
   description?: string;
   assignedTo?: string;
+  roomId?: string;
   createdBy: string;
   interval: Interval;
   dueAt?: Timestamp | null; // Optional override: explicit date, or null for one-off with no deadline
@@ -53,6 +55,7 @@ export interface ChoreUpdateInput {
   name?: string;
   description?: string;
   assignedTo?: string;
+  roomId?: string;
   interval?: Interval;
   dueAt?: Timestamp | null;
   isOverdue?: boolean;

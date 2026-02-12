@@ -44,6 +44,19 @@ export interface HouseholdMemberDocument {
 }
 
 /**
+ * Room document shape in Firestore: /households/{householdId}/rooms/{roomId}
+ */
+export interface RoomDocument {
+  id: string;
+  householdId: string;
+  name: string;
+  isDefault: boolean;
+  sortOrder: number;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+/**
  * Chore document shape in Firestore: /chores/{choreId}
  */
 export interface ChoreDocument {
@@ -52,6 +65,7 @@ export interface ChoreDocument {
   name: string;
   description?: string;
   assignedTo?: string;
+  roomId?: string;
   createdBy: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;

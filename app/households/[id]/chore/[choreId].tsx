@@ -18,6 +18,7 @@ import {
   useUpdateChore,
 } from '@/lib/hooks/use-chores';
 import { useHouseholdMembers } from '@/lib/hooks/use-households';
+import { useHouseholdRooms } from '@/lib/hooks/use-rooms';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { useUserProfiles } from '@/lib/hooks/use-users';
 import {
@@ -63,6 +64,7 @@ export default function ChoreDetailScreen() {
   const { data: members = [] } = useHouseholdMembers(householdId);
   const memberUserIds = useMemo(() => members.map((m) => m.userId), [members]);
   const { profiles } = useUserProfiles(memberUserIds);
+  const { data: rooms = [] } = useHouseholdRooms(householdId);
 
   const completeMutation = useCompleteChore(householdId ?? '', user?.uid ?? '');
   const undoMutation = useUndoCompletion(householdId ?? '', user?.uid ?? '');
@@ -76,6 +78,7 @@ export default function ChoreDetailScreen() {
   const [editIntervalType, setEditIntervalType] = useState<IntervalType>('weekly');
   const [editIntervalValue, setEditIntervalValue] = useState('1');
   const [editAssignedTo, setEditAssignedTo] = useState<string | undefined>();
+  const [editRoomId, setEditRoomId] = useState<string | undefined>();
   const [editDueDate, setEditDueDate] = useState<Date | null>(null);
 
   const startEditing = () => {
@@ -85,6 +88,7 @@ export default function ChoreDetailScreen() {
     setEditIntervalType(chore.interval.type);
     setEditIntervalValue(String(chore.interval.value));
     setEditAssignedTo(chore.assignedTo);
+    setEditRoomId(chore.roomId);
     setEditDueDate(chore.dueAt ? chore.dueAt.toDate() : null);
     setEditing(true);
   };
@@ -104,6 +108,7 @@ export default function ChoreDetailScreen() {
         name: trimmedName,
         description: editDesc.trim() || undefined,
         assignedTo: editAssignedTo,
+        roomId: editRoomId,
         interval: { type: editIntervalType, value: parsedValue },
       };
 
@@ -218,10 +223,13 @@ export default function ChoreDetailScreen() {
                 setIntervalValue={setEditIntervalValue}
                 assignedTo={editAssignedTo}
                 setAssignedTo={setEditAssignedTo}
+                roomId={editRoomId}
+                setRoomId={setEditRoomId}
                 dueDate={editDueDate}
                 setDueDate={setEditDueDate}
                 members={members}
                 profiles={profiles}
+                rooms={rooms}
                 onSave={handleSave}
                 onCancel={() => setEditing(false)}
                 saving={updateMutation.isPending}

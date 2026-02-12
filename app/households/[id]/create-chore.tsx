@@ -12,6 +12,7 @@ import { Typography } from '@/components/ui/typography';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useCreateChore } from '@/lib/hooks/use-chores';
 import { useHouseholdMembers } from '@/lib/hooks/use-households';
+import { useHouseholdRooms } from '@/lib/hooks/use-rooms';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { useUserProfiles } from '@/lib/hooks/use-users';
 import { calculateNextDueDate } from '@/lib/services/chore-service';
@@ -52,6 +53,7 @@ export default function CreateChoreScreen() {
   const { data: members = [] } = useHouseholdMembers(householdId);
   const memberUserIds = useMemo(() => members.map((m) => m.userId), [members]);
   const { profiles } = useUserProfiles(memberUserIds);
+  const { data: rooms = [] } = useHouseholdRooms(householdId);
 
   // ── Form state ──
   const [name, setName] = useState('');
@@ -59,6 +61,7 @@ export default function CreateChoreScreen() {
   const [intervalType, setIntervalType] = useState<IntervalType>('weekly');
   const [intervalValue, setIntervalValue] = useState('1');
   const [assignedTo, setAssignedTo] = useState<string | undefined>(undefined);
+  const [roomId, setRoomId] = useState<string | undefined>(undefined);
 
   // Due date override state
   const [customDueDate, setCustomDueDate] = useState<Date | null>(null);
@@ -104,6 +107,7 @@ export default function CreateChoreScreen() {
         name: trimmedName,
         description: description.trim() || undefined,
         assignedTo,
+        roomId,
         createdBy: user.uid,
         interval: { type: intervalType, value: isOneOff ? 1 : parsedValue },
         dueAt,
@@ -289,6 +293,28 @@ export default function CreateChoreScreen() {
                     label={profiles[idx]?.displayName ?? 'User'}
                     selected={assignedTo === member.userId}
                     onPress={() => setAssignedTo(member.userId)}
+                  />
+                ))}
+              </View>
+            </View>
+
+            {/* Room */}
+            <View style={styles.field}>
+              <Typography variant="label" style={styles.fieldLabel}>
+                Room
+              </Typography>
+              <View style={styles.chips}>
+                <Chip
+                  label="None"
+                  selected={!roomId}
+                  onPress={() => setRoomId(undefined)}
+                />
+                {rooms.map((room) => (
+                  <Chip
+                    key={room.id}
+                    label={room.name}
+                    selected={roomId === room.id}
+                    onPress={() => setRoomId(room.id)}
                   />
                 ))}
               </View>

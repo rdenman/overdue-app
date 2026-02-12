@@ -11,6 +11,12 @@ export const queryKeys = {
     member: (householdId: string, userId: string) =>
       ['households', 'member', householdId, userId] as const,
   },
+  rooms: {
+    household: (householdId: string) =>
+      ['rooms', 'household', householdId] as const,
+    detail: (householdId: string, roomId: string) =>
+      ['rooms', 'detail', householdId, roomId] as const,
+  },
   chores: {
     household: (householdId: string) =>
       ['chores', 'household', householdId] as const,

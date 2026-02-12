@@ -65,6 +65,18 @@ async function deleteHouseholdChores(householdId: string): Promise<number> {
   return snapshot.size;
 }
 
+// Delete all rooms for a household
+async function deleteHouseholdRooms(householdId: string): Promise<number> {
+  const roomsRef = collection(firestore, 'households', householdId, 'rooms');
+  const snapshot = await getDocs(roomsRef);
+  
+  for (const roomDoc of snapshot.docs) {
+    await deleteDoc(roomDoc.ref);
+  }
+  
+  return snapshot.size;
+}
+
 // Delete all invites for a household
 async function deleteHouseholdInvites(householdId: string): Promise<number> {
   const invitesRef = collection(firestore, 'invites');
@@ -122,6 +134,10 @@ async function deleteHousehold(householdId: string, householdName: string) {
   // Delete invites
   const invitesCount = await deleteHouseholdInvites(householdId);
   console.log(`  ✓ Deleted ${invitesCount} invite(s)`);
+  
+  // Delete rooms
+  const roomsCount = await deleteHouseholdRooms(householdId);
+  console.log(`  ✓ Deleted ${roomsCount} room(s)`);
   
   // Delete members
   const membersCount = await deleteHouseholdMembers(householdId);

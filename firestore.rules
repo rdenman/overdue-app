@@ -53,6 +53,25 @@ service cloud.firestore {
       // Only the owner can update or delete their household
       allow update: if isHouseholdOwner(householdId);
       allow delete: if isHouseholdOwner(householdId);
+
+      // Rooms subcollection
+      match /rooms/{roomId} {
+        // Members of the household can read rooms
+        allow read: if isAuthenticated() && isHouseholdMember(householdId);
+        
+        // Only household admins can create rooms
+        allow create: if isAuthenticated() && 
+                         isHouseholdAdmin(householdId) &&
+                         request.resource.data.householdId == householdId;
+        
+        // Only household admins can update rooms
+        allow update: if isAuthenticated() && 
+                         isHouseholdAdmin(householdId);
+        
+        // Only household admins can delete rooms
+        allow delete: if isAuthenticated() && 
+                         isHouseholdAdmin(householdId);
+      }
     }
     
     // Household Members collection
