@@ -90,8 +90,9 @@ export async function scheduleAllNotifications(
     horizon.setDate(horizon.getDate() + SCHEDULE_HORIZON_DAYS);
 
     for (const chore of chores) {
-      // Skip completed chores
+      // Skip completed chores and chores with no due date
       if (chore.lastCompletion) continue;
+      if (!chore.dueAt) continue;
 
       const dueDate = chore.dueAt.toDate();
       // Only schedule if due date is in the future and within horizon
@@ -131,6 +132,7 @@ export async function scheduleDailyReminder(time: string): Promise<string> {
  * Schedule a one-time notification for a chore at 8:00 AM on its due date.
  */
 export async function scheduleChoreNotification(chore: Chore): Promise<string> {
+  if (!chore.dueAt) return '';
   const dueDate = chore.dueAt.toDate();
   const triggerDate = new Date(
     dueDate.getFullYear(),

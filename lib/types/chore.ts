@@ -10,7 +10,8 @@ export type IntervalType =
   | 'weekly'
   | 'monthly'
   | 'yearly'
-  | 'custom';
+  | 'custom'
+  | 'once';
 
 export interface Interval {
   type: IntervalType;
@@ -20,7 +21,7 @@ export interface Interval {
 export interface Completion {
   completedAt: Timestamp;
   completedBy: string;
-  previousDueAt: Timestamp; // For undo: restores dueAt to this value
+  previousDueAt: Timestamp | null; // For undo: restores dueAt to this value (null for one-off chores with no deadline)
 }
 
 export interface Chore {
@@ -33,7 +34,7 @@ export interface Chore {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   interval: Interval;
-  dueAt: Timestamp;
+  dueAt: Timestamp | null; // null for one-off chores with no deadline
   isOverdue: boolean;
   lastCompletion?: Completion;
 }
@@ -45,6 +46,7 @@ export interface ChoreCreateInput {
   assignedTo?: string;
   createdBy: string;
   interval: Interval;
+  dueAt?: Timestamp | null; // Optional override: explicit date, or null for one-off with no deadline
 }
 
 export interface ChoreUpdateInput {
@@ -52,7 +54,7 @@ export interface ChoreUpdateInput {
   description?: string;
   assignedTo?: string;
   interval?: Interval;
-  dueAt?: Timestamp;
+  dueAt?: Timestamp | null;
   isOverdue?: boolean;
   lastCompletion?: Completion;
   updatedAt?: Timestamp;

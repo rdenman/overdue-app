@@ -3,14 +3,18 @@
  * Extracted to keep chore detail screen under 300 LOC
  */
 
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { Input } from '@/components/ui/input';
+import { Typography } from '@/components/ui/typography';
+import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { IntervalType } from '@/lib/types/chore';
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 const INTERVAL_LABELS: Record<IntervalType, string> = {
+  once: 'One-off',
   daily: 'Daily',
   weekly: 'Weekly',
   monthly: 'Monthly',
@@ -29,6 +33,8 @@ export interface ChoreEditFormProps {
   setIntervalValue: (v: string) => void;
   assignedTo: string | undefined;
   setAssignedTo: (v: string | undefined) => void;
+  dueDate: Date | null;
+  setDueDate: (v: Date | null) => void;
   members: { userId: string }[];
   profiles: (null | { displayName: string })[];
   onSave: () => void;
@@ -40,9 +46,19 @@ export function ChoreEditForm(props: ChoreEditFormProps) {
   const {
     name, setName, description, setDescription,
     intervalType, setIntervalType, intervalValue, setIntervalValue,
-    assignedTo, setAssignedTo, members, profiles,
+    assignedTo, setAssignedTo, dueDate, setDueDate,
+    members, profiles,
     onSave, onCancel, saving,
   } = props;
+
+  const tintColor = useThemeColor({}, 'tint');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const isOneOff = intervalType === 'once';
+
+  const handleDateChange = (_event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') setShowDatePicker(false);
+    if (selectedDate) setDueDate(selectedDate);
+  };
 
   return (
     <View style={styles.editForm}>
@@ -59,16 +75,22 @@ export function ChoreEditForm(props: ChoreEditFormProps) {
         multiline
       />
       <View style={styles.chips}>
-        {(['daily', 'weekly', 'monthly', 'yearly', 'custom'] as IntervalType[]).map((t) => (
+        {(['once', 'daily', 'weekly', 'monthly', 'yearly', 'custom'] as IntervalType[]).map((t) => (
           <Chip
             key={t}
             label={INTERVAL_LABELS[t]}
             selected={t === intervalType}
-            onPress={() => { setIntervalType(t); setIntervalValue('1'); }}
+            onPress={() => {
+              setIntervalType(t);
+              setIntervalValue('1');
+              if (t === 'once') {
+                // Keep existing dueDate when switching to one-off
+              }
+            }}
           />
         ))}
       </View>
-      {(intervalType === 'monthly' || intervalType === 'yearly' || intervalType === 'custom') && (
+      {!isOneOff && (intervalType === 'monthly' || intervalType === 'yearly' || intervalType === 'custom') && (
         <Input
           value={intervalValue}
           onChangeText={setIntervalValue}
@@ -77,6 +99,52 @@ export function ChoreEditForm(props: ChoreEditFormProps) {
           style={styles.valueInput}
         />
       )}
+
+      {/* Due date */}
+      <View>
+        {isOneOff ? (
+          <>
+            <Pressable onPress={() => setShowDatePicker(true)}>
+              <Typography style={[styles.dateDisplay, { color: dueDate ? tintColor : undefined }]}>
+                {dueDate
+                  ? `Due: ${dueDate.toLocaleDateString()}`
+                  : 'No deadline — tap to set a date'}
+              </Typography>
+            </Pressable>
+            {dueDate && (
+              <Pressable onPress={() => { setDueDate(null); setShowDatePicker(false); }}>
+                <Typography variant="caption" style={{ color: tintColor, marginTop: 4 }}>
+                  Clear date
+                </Typography>
+              </Pressable>
+            )}
+          </>
+        ) : (
+          <Pressable onPress={() => setShowDatePicker(!showDatePicker)}>
+            <Typography variant="caption" muted style={styles.dateDisplay}>
+              {dueDate
+                ? `Due: ${dueDate.toLocaleDateString()}`
+                : 'No due date set'}
+              {'  '}
+              <Typography variant="caption" style={{ color: tintColor }}>
+                Change
+              </Typography>
+            </Typography>
+          </Pressable>
+        )}
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={dueDate ?? new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            minimumDate={new Date()}
+            onChange={handleDateChange}
+            style={styles.datePicker}
+          />
+        )}
+      </View>
+
       <View style={styles.chips}>
         <Chip
           label="Anyone"
@@ -117,4 +185,6 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   valueInput: { width: 70, textAlign: 'center' },
   actionRow: { flexDirection: 'row', gap: 12, marginTop: 20 },
+  dateDisplay: { fontSize: 15, paddingVertical: 4 },
+  datePicker: { marginTop: 8 },
 });

@@ -91,7 +91,7 @@ const DESCRIPTIONS = [
 ];
 
 interface IntervalType {
-  type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+  type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' | 'once';
   value: number;
 }
 
@@ -104,6 +104,17 @@ const INTERVALS: IntervalType[] = [
   { type: 'monthly', value: 3 },
   { type: 'custom', value: 10 }, // Every 10 days
   { type: 'custom', value: 14 }, // Every 2 weeks
+  { type: 'once', value: 1 },    // One-off chore
+];
+
+// One-off chore names
+const ONE_OFF_CHORE_NAMES = [
+  'Replace front door',
+  'Fix leaky faucet',
+  'Paint bedroom',
+  'Install new shelves',
+  'Fix broken fence',
+  'Replace smoke detector batteries',
 ];
 
 // Helper to calculate due date
@@ -226,6 +237,8 @@ async function createChores(
   let overdueCount = 0;
   let todayCount = 0;
   let futureCount = 0;
+  let oneOffCount = 0;
+  let overriddenCount = 0;
   
   // Get current authenticated user to use as createdBy for all chores
   const currentUserId = auth.currentUser?.uid;
@@ -238,36 +251,74 @@ async function createChores(
     const timestamp = Timestamp.now();
     
     // Pick random chore attributes
-    const name = CHORE_NAMES[i % CHORE_NAMES.length];
-    const description = DESCRIPTIONS[i % DESCRIPTIONS.length] || undefined;
     const interval = INTERVALS[i % INTERVALS.length];
+    const isOneOff = interval.type === 'once';
+
+    // Use one-off names for one-off intervals, regular names for others
+    const name = isOneOff
+      ? ONE_OFF_CHORE_NAMES[i % ONE_OFF_CHORE_NAMES.length]
+      : CHORE_NAMES[i % CHORE_NAMES.length];
+    const description = DESCRIPTIONS[i % DESCRIPTIONS.length] || undefined;
     // All chores created by the currently authenticated user
     const createdBy = currentUserId;
     
     // Assign some chores, leave some unassigned
     const assignedTo = i % 3 === 0 ? undefined : userIds[i % userIds.length];
     
-    // Create variety in due dates:
-    // 30% overdue, 20% due today, 50% future
-    let daysOffset: number;
-    const rand = Math.random();
-    
-    if (rand < 0.3) {
-      // Overdue: -1 to -14 days
-      daysOffset = -Math.floor(Math.random() * 14) - 1;
-      overdueCount++;
-    } else if (rand < 0.5) {
-      // Due today: 0 days
-      daysOffset = 0;
-      todayCount++;
+    let dueAt: Timestamp | null;
+    let isOverdueFlag: boolean;
+
+    if (isOneOff) {
+      // One-off chores: 50% have a due date, 50% have no deadline
+      oneOffCount++;
+      if (Math.random() < 0.5) {
+        // One-off with a specific due date (future)
+        const futureDays = Math.floor(Math.random() * 60) + 1;
+        const futureDate = new Date(now);
+        futureDate.setDate(futureDate.getDate() + futureDays);
+        dueAt = Timestamp.fromDate(futureDate);
+        isOverdueFlag = false;
+        futureCount++;
+      } else {
+        // One-off with no deadline
+        dueAt = null;
+        isOverdueFlag = false;
+      }
     } else {
-      // Future: +1 to +30 days
-      daysOffset = Math.floor(Math.random() * 30) + 1;
-      futureCount++;
+      // Recurring chores — check if we should override the due date
+      // ~15% of recurring chores get a manually overridden due date
+      const shouldOverride = Math.random() < 0.15;
+
+      if (shouldOverride) {
+        // Overridden: set a custom future date that doesn't match the interval calculation
+        overriddenCount++;
+        const overrideDays = Math.floor(Math.random() * 90) + 7; // 7-96 days from now
+        const overrideDate = new Date(now);
+        overrideDate.setDate(overrideDate.getDate() + overrideDays);
+        dueAt = Timestamp.fromDate(overrideDate);
+        isOverdueFlag = false;
+        futureCount++;
+      } else {
+        // Normal due date calculation with variety
+        let daysOffset: number;
+        const rand = Math.random();
+
+        if (rand < 0.3) {
+          daysOffset = -Math.floor(Math.random() * 14) - 1;
+          overdueCount++;
+        } else if (rand < 0.5) {
+          daysOffset = 0;
+          todayCount++;
+        } else {
+          daysOffset = Math.floor(Math.random() * 30) + 1;
+          futureCount++;
+        }
+
+        const dueDate = calculateDueDate(interval, daysOffset);
+        dueAt = Timestamp.fromDate(dueDate);
+        isOverdueFlag = dueDate < now;
+      }
     }
-    
-    const dueDate = calculateDueDate(interval, daysOffset);
-    const isOverdue = dueDate < now;
     
     // Build chore object, only including optional fields if they have values
     const chore: any = {
@@ -278,8 +329,8 @@ async function createChores(
       createdAt: timestamp,
       updatedAt: timestamp,
       interval,
-      dueAt: Timestamp.fromDate(dueDate),
-      isOverdue,
+      dueAt,
+      isOverdue: isOverdueFlag,
     };
     
     // Only add optional fields if they have values
@@ -297,6 +348,8 @@ async function createChores(
   console.log(`  - ${overdueCount} overdue`);
   console.log(`  - ${todayCount} due today`);
   console.log(`  - ${futureCount} due in the future`);
+  console.log(`  - ${oneOffCount} one-off (${oneOffCount > 0 ? 'some with no deadline' : ''})`);
+  console.log(`  - ${overriddenCount} with overridden due dates`);
 }
 
 // Main seeding function

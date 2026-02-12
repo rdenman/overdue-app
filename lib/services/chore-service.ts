@@ -58,8 +58,10 @@ export function calculateNextDueDate(from: Date, interval: Interval): Date {
 
 /**
  * Determine whether a chore is overdue right now.
+ * Chores with no due date (null) are never overdue.
  */
 export function isChoreOverdue(chore: Chore): boolean {
+  if (!chore.dueAt) return false;
   return chore.dueAt.toDate() < new Date() && !chore.lastCompletion;
 }
 
@@ -87,9 +89,21 @@ export async function createChore(input: ChoreCreateInput): Promise<Chore> {
   try {
     const choreRef = doc(collection(firestore, 'chores'));
     const now = Timestamp.now();
-    const dueAt = Timestamp.fromDate(
-      calculateNextDueDate(now.toDate(), input.interval)
-    );
+
+    // Determine dueAt:
+    // 1. If caller explicitly provided a dueAt (including null for no-deadline), use it.
+    // 2. For one-off chores with no explicit date, default to null.
+    // 3. Otherwise, auto-calculate from interval.
+    let dueAt: Timestamp | null;
+    if (input.dueAt !== undefined) {
+      dueAt = input.dueAt;
+    } else if (input.interval.type === 'once') {
+      dueAt = null;
+    } else {
+      dueAt = Timestamp.fromDate(
+        calculateNextDueDate(now.toDate(), input.interval)
+      );
+    }
 
     const chore: Chore = {
       id: choreRef.id,
@@ -172,8 +186,13 @@ export async function getChoresForHouseholds(
       batches.push(...snap.docs.map((d) => d.data()));
     }
 
-    // Sort merged results by dueAt
-    batches.sort((a, b) => a.dueAt.toMillis() - b.dueAt.toMillis());
+    // Sort merged results by dueAt (null dueAt pushed to end)
+    batches.sort((a, b) => {
+      if (!a.dueAt && !b.dueAt) return 0;
+      if (!a.dueAt) return 1;
+      if (!b.dueAt) return -1;
+      return a.dueAt.toMillis() - b.dueAt.toMillis();
+    });
     return batches;
   } catch (error) {
     console.error('Error getting chores for households:', error);
@@ -224,23 +243,37 @@ export async function completeChore(
     const chore = await getChore(choreId);
     if (!chore) throw new Error('Chore not found');
 
-    const now = new Date();
-    const dueDate = chore.dueAt.toDate();
+    const isOneOff = chore.interval.type === 'once';
 
-    // If completed late, next due resets from now; otherwise from original due date
-    const baseDate = now > dueDate ? now : dueDate;
-    const nextDue = calculateNextDueDate(baseDate, chore.interval);
+    if (isOneOff) {
+      // One-off chores don't recur — just mark completed, keep dueAt as-is
+      await updateDoc(doc(firestore, 'chores', choreId), {
+        lastCompletion: {
+          completedAt: Timestamp.now(),
+          completedBy: userId,
+          previousDueAt: chore.dueAt, // may be null
+        },
+        isOverdue: false,
+        updatedAt: Timestamp.now(),
+      });
+    } else {
+      // Recurring chores: calculate next due date
+      const now = new Date();
+      const dueDate = chore.dueAt!.toDate(); // recurring chores always have dueAt
+      const baseDate = now > dueDate ? now : dueDate;
+      const nextDue = calculateNextDueDate(baseDate, chore.interval);
 
-    await updateDoc(doc(firestore, 'chores', choreId), {
-      lastCompletion: {
-        completedAt: Timestamp.now(),
-        completedBy: userId,
-        previousDueAt: chore.dueAt,
-      },
-      dueAt: Timestamp.fromDate(nextDue),
-      isOverdue: false,
-      updatedAt: Timestamp.now(),
-    });
+      await updateDoc(doc(firestore, 'chores', choreId), {
+        lastCompletion: {
+          completedAt: Timestamp.now(),
+          completedBy: userId,
+          previousDueAt: chore.dueAt,
+        },
+        dueAt: Timestamp.fromDate(nextDue),
+        isOverdue: false,
+        updatedAt: Timestamp.now(),
+      });
+    }
   } catch (error) {
     console.error('Error completing chore:', error);
     throw error;
@@ -254,11 +287,13 @@ export async function undoCompletion(choreId: string): Promise<void> {
     if (!chore.lastCompletion) throw new Error('No completion to undo');
 
     const restoredDueAt = chore.lastCompletion.previousDueAt;
-    const nowOverdue = restoredDueAt.toDate() < new Date();
+    const nowOverdue = restoredDueAt
+      ? restoredDueAt.toDate() < new Date()
+      : false;
 
     await updateDoc(doc(firestore, 'chores', choreId), {
       lastCompletion: null,
-      dueAt: restoredDueAt,
+      dueAt: restoredDueAt, // may be null for one-off chores
       isOverdue: nowOverdue,
       updatedAt: Timestamp.now(),
     });

@@ -48,9 +48,13 @@ export default function HouseholdChoresScreen() {
   const completeMutation = useCompleteChore(householdId ?? '', user?.uid ?? '');
   const undoMutation = useUndoCompletion(householdId ?? '', user?.uid ?? '');
 
-  // Sort: overdue first, then by dueAt ascending
+  // Sort: overdue first, then by dueAt ascending, no-deadline chores last
   const sortedChores = useMemo(() => {
     return [...chores].sort((a, b) => {
+      // Push null dueAt to the bottom
+      if (!a.dueAt && !b.dueAt) return 0;
+      if (!a.dueAt) return 1;
+      if (!b.dueAt) return -1;
       const aOverdue = isChoreOverdue(a);
       const bOverdue = isChoreOverdue(b);
       if (aOverdue && !bOverdue) return -1;

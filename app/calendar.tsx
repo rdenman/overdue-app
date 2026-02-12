@@ -60,6 +60,9 @@ export default function CalendarScreen() {
     const marks: Record<string, { dots: { key: string; color: string }[]; selected?: boolean; selectedColor?: string }> = {};
 
     for (const chore of allChores) {
+      // Skip chores with no due date
+      if (!chore.dueAt) continue;
+
       const dateStr = toDateString(chore.dueAt.toDate());
       if (!marks[dateStr]) marks[dateStr] = { dots: [] };
 
@@ -82,13 +85,13 @@ export default function CalendarScreen() {
   // Filter chores for the selected date
   const selectedChores = useMemo(() => {
     return allChores
-      .filter((c) => toDateString(c.dueAt.toDate()) === selectedDate)
+      .filter((c) => c.dueAt && toDateString(c.dueAt.toDate()) === selectedDate)
       .sort((a, b) => {
         const aOverdue = isChoreOverdue(a);
         const bOverdue = isChoreOverdue(b);
         if (aOverdue && !bOverdue) return -1;
         if (!aOverdue && bOverdue) return 1;
-        return a.dueAt.toMillis() - b.dueAt.toMillis();
+        return a.dueAt!.toMillis() - b.dueAt!.toMillis();
       });
   }, [allChores, selectedDate]);
 

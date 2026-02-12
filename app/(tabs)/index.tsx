@@ -75,6 +75,8 @@ export default function TodayScreen() {
 
     return allChores
       .filter((c) => {
+        // Skip chores with no due date (one-off with no deadline)
+        if (!c.dueAt) return false;
         const dueDate = c.dueAt.toDate();
         // Show if: due today or before (overdue), regardless of completion
         return dueDate <= endOfToday;
@@ -90,7 +92,8 @@ export default function TodayScreen() {
         const bOverdue = isChoreOverdue(b);
         if (aOverdue && !bOverdue) return -1;
         if (!aOverdue && bOverdue) return 1;
-        return a.dueAt.toMillis() - b.dueAt.toMillis();
+        // Both guaranteed to have dueAt since we filtered nulls above
+        return a.dueAt!.toMillis() - b.dueAt!.toMillis();
       });
   }, [allChores]);
 

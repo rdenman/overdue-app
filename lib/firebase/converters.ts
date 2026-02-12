@@ -120,7 +120,7 @@ export const choreConverter: FirestoreDataConverter<Chore> = {
       createdAt: chore.createdAt,
       updatedAt: chore.updatedAt,
       interval: chore.interval,
-      dueAt: chore.dueAt,
+      dueAt: chore.dueAt ?? null, // Store null explicitly for Firestore ordering
       isOverdue: chore.isOverdue,
     };
 
@@ -145,7 +145,7 @@ export const choreConverter: FirestoreDataConverter<Chore> = {
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
       interval: data.interval,
-      dueAt: data.dueAt,
+      dueAt: data.dueAt ?? null,
       isOverdue: data.isOverdue,
       lastCompletion: data.lastCompletion,
     };

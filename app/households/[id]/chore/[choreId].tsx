@@ -21,7 +21,6 @@ import { useHouseholdMembers } from '@/lib/hooks/use-households';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
 import { useUserProfiles } from '@/lib/hooks/use-users';
 import {
-  calculateNextDueDate,
   getUpcomingDueDates,
   isChoreOverdue,
 } from '@/lib/services/chore-service';
@@ -40,6 +39,7 @@ import {
 } from 'react-native';
 
 const INTERVAL_LABELS: Record<IntervalType, string> = {
+  once: 'One-off',
   daily: 'Daily',
   weekly: 'Weekly',
   monthly: 'Monthly',
@@ -76,6 +76,7 @@ export default function ChoreDetailScreen() {
   const [editIntervalType, setEditIntervalType] = useState<IntervalType>('weekly');
   const [editIntervalValue, setEditIntervalValue] = useState('1');
   const [editAssignedTo, setEditAssignedTo] = useState<string | undefined>();
+  const [editDueDate, setEditDueDate] = useState<Date | null>(null);
 
   const startEditing = () => {
     if (!chore) return;
@@ -84,6 +85,7 @@ export default function ChoreDetailScreen() {
     setEditIntervalType(chore.interval.type);
     setEditIntervalValue(String(chore.interval.value));
     setEditAssignedTo(chore.assignedTo);
+    setEditDueDate(chore.dueAt ? chore.dueAt.toDate() : null);
     setEditing(true);
   };
 
@@ -94,9 +96,9 @@ export default function ChoreDetailScreen() {
       Alert.alert('Error', 'Chore name is required');
       return;
     }
-    const parsedValue = Math.max(1, parseInt(editIntervalValue, 10) || 1);
-    const intervalChanged =
-      editIntervalType !== chore.interval.type || parsedValue !== chore.interval.value;
+    const isOneOff = editIntervalType === 'once';
+    const parsedValue = isOneOff ? 1 : Math.max(1, parseInt(editIntervalValue, 10) || 1);
+
     try {
       const updates: ChoreUpdateInput = {
         name: trimmedName,
@@ -104,14 +106,15 @@ export default function ChoreDetailScreen() {
         assignedTo: editAssignedTo,
         interval: { type: editIntervalType, value: parsedValue },
       };
-      if (intervalChanged) {
-        const nextDue = calculateNextDueDate(new Date(), {
-          type: editIntervalType,
-          value: parsedValue,
-        });
-        updates.dueAt = Timestamp.fromDate(nextDue);
-        updates.isOverdue = false;
+
+      // Always send the edited dueAt (user may have overridden it)
+      if (isOneOff) {
+        updates.dueAt = editDueDate ? Timestamp.fromDate(editDueDate) : null;
+      } else {
+        updates.dueAt = editDueDate ? Timestamp.fromDate(editDueDate) : undefined;
       }
+      updates.isOverdue = false;
+
       await updateMutation.mutateAsync(updates);
       setEditing(false);
     } catch (err: any) {
@@ -169,6 +172,7 @@ export default function ChoreDetailScreen() {
   const overdue = isChoreOverdue(chore);
   const completed = !!chore.lastCompletion;
   const assigneeProfile = profiles[memberUserIds.indexOf(chore.assignedTo ?? '')];
+  const isOneOff = chore.interval.type === 'once';
 
   return (
     <>
@@ -214,6 +218,8 @@ export default function ChoreDetailScreen() {
                 setIntervalValue={setEditIntervalValue}
                 assignedTo={editAssignedTo}
                 setAssignedTo={setEditAssignedTo}
+                dueDate={editDueDate}
+                setDueDate={setEditDueDate}
                 members={members}
                 profiles={profiles}
                 onSave={handleSave}
@@ -226,11 +232,15 @@ export default function ChoreDetailScreen() {
                 <DetailRow label="Description" value={chore.description || '—'} />
                 <DetailRow
                   label="Repeat"
-                  value={`${INTERVAL_LABELS[chore.interval.type]}${chore.interval.value > 1 ? ` (every ${chore.interval.value})` : ''}`}
+                  value={
+                    isOneOff
+                      ? 'One-off'
+                      : `${INTERVAL_LABELS[chore.interval.type]}${chore.interval.value > 1 ? ` (every ${chore.interval.value})` : ''}`
+                  }
                 />
                 <DetailRow
                   label="Due"
-                  value={chore.dueAt.toDate().toLocaleDateString()}
+                  value={chore.dueAt ? chore.dueAt.toDate().toLocaleDateString() : 'No deadline'}
                   valueColor={overdue ? errorColor : undefined}
                 />
                 <DetailRow
@@ -247,7 +257,9 @@ export default function ChoreDetailScreen() {
                     style={{ flex: 1 }}
                   />
                 </View>
-                <UpcomingSchedule chore={chore} />
+                {!isOneOff && chore.dueAt && (
+                  <UpcomingSchedule chore={chore as { dueAt: { toDate: () => Date }; interval: { type: IntervalType; value: number } }} />
+                )}
               </View>
             )}
           </ThemedView>

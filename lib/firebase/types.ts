@@ -59,12 +59,12 @@ export interface ChoreDocument {
     type: IntervalType;
     value: number;
   };
-  dueAt: Timestamp;
+  dueAt: Timestamp | null;
   isOverdue: boolean;
   lastCompletion?: {
     completedAt: Timestamp;
     completedBy: string;
-    previousDueAt: Timestamp;
+    previousDueAt: Timestamp | null;
   };
 }
 

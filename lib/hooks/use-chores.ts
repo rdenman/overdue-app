@@ -96,9 +96,11 @@ export function useAllHouseholdChoreStats(
       if (isChoreOverdue(chore)) {
         stats.overdue++;
       }
-      const dueDate = chore.dueAt.toDate();
-      if (dueDate >= todayStart && dueDate < todayEnd && !chore.lastCompletion) {
-        stats.dueToday++;
+      if (chore.dueAt) {
+        const dueDate = chore.dueAt.toDate();
+        if (dueDate >= todayStart && dueDate < todayEnd && !chore.lastCompletion) {
+          stats.dueToday++;
+        }
       }
     }
     return map;

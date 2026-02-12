@@ -24,7 +24,9 @@ interface ChoreCardProps {
   disabled?: boolean;
 }
 
-function formatDueDate(date: Date): string {
+function formatDueDate(date: Date | null): string {
+  if (!date) return 'No deadline';
+
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const due = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -55,7 +57,7 @@ export function ChoreCard({
 
   const overdue = isChoreOverdue(chore);
   const completed = !!chore.lastCompletion;
-  const dueDate = chore.dueAt.toDate();
+  const dueDate = chore.dueAt ? chore.dueAt.toDate() : null;
   const dueDateLabel = formatDueDate(dueDate);
 
   return (

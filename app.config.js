@@ -42,6 +42,7 @@ export default {
         },
       ],
       'expo-notifications',
+      '@react-native-community/datetimepicker',
     ],
     experiments: {
       typedRoutes: true,
