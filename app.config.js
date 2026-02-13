@@ -15,6 +15,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.overdueapp.mobile',
+      usesAppleSignIn: true,
     },
     android: {
       adaptiveIcon: {
@@ -29,6 +30,7 @@ export default {
     },
     plugins: [
       'expo-router',
+      'expo-apple-authentication',
       [
         'expo-splash-screen',
         {

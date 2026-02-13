@@ -1,15 +1,17 @@
 /**
  * Sign In screen
- * Email/password authentication
+ * Email/password and Apple authentication
  */
 
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Typography } from '@/components/ui/typography';
-import { signIn } from '@/lib/services/auth-service';
+import { useTheme } from '@/lib/contexts/theme-context';
+import { signIn, signInWithApple } from '@/lib/services/auth-service';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { Link } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -23,6 +25,14 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      AppleAuthentication.isAvailableAsync().then(setAppleAuthAvailable);
+    }
+  }, []);
 
   const handleSignIn = async () => {
     if (!email.trim() || !password.trim()) {
@@ -36,6 +46,21 @@ export default function SignInScreen() {
       // Navigation handled by AuthContext redirect
     } catch (error: any) {
       Alert.alert('Sign In Failed', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setLoading(true);
+    try {
+      await signInWithApple();
+      // Navigation handled by AuthContext redirect
+    } catch (error: any) {
+      // Don't show alert if user cancelled
+      if (error.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert('Sign In Failed', error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -93,6 +118,28 @@ export default function SignInScreen() {
               disabled={loading}
             />
 
+            {appleAuthAvailable && (
+              <>
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Typography muted style={styles.dividerText}>or</Typography>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                  buttonStyle={
+                    theme === 'dark'
+                      ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                      : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                  }
+                  cornerRadius={8}
+                  style={styles.appleButton}
+                  onPress={handleAppleSignIn}
+                />
+              </>
+            )}
+
             <View style={styles.footer}>
               <Typography muted>Don&apos;t have an account? </Typography>
               <Link href="/(auth)/sign-up" asChild>
@@ -137,6 +184,23 @@ const styles = StyleSheet.create({
   forgotPassword: {
     textAlign: 'right',
     marginBottom: 24,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#999',
+  },
+  dividerText: {
+    marginHorizontal: 12,
+  },
+  appleButton: {
+    width: '100%',
+    height: 48,
   },
   footer: {
     flexDirection: 'row',

@@ -3,8 +3,12 @@
  * Handles all Firebase Auth operations
  */
 
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { digestStringAsync, CryptoDigestAlgorithm, getRandomBytes } from 'expo-crypto';
 import {
   createUserWithEmailAndPassword,
+  OAuthProvider,
+  signInWithCredential,
   signOut as firebaseSignOut,
   User as FirebaseUser,
   sendEmailVerification,
@@ -13,6 +17,8 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
+import { createDefaultHousehold } from './household-service';
+import { createUserProfile, getUserProfile } from './user-service';
 
 export interface SignUpParams {
   email: string;
@@ -105,6 +111,92 @@ export async function resendVerificationEmail(): Promise<void> {
 }
 
 /**
+ * Sign in with Apple
+ * Handles the full Apple Sign-In flow:
+ * 1. Generate a secure nonce for Firebase
+ * 2. Authenticate with Apple
+ * 3. Sign in to Firebase with Apple credential
+ * 4. Create Firestore profile + default household for new users
+ */
+export async function signInWithApple(): Promise<FirebaseUser> {
+  try {
+    // Generate a secure nonce and its SHA-256 hash
+    const rawNonce = generateNonce();
+    const hashedNonce = await digestStringAsync(
+      CryptoDigestAlgorithm.SHA256,
+      rawNonce
+    );
+
+    // Request Apple authentication
+    const appleCredential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+      nonce: hashedNonce,
+    });
+
+    if (!appleCredential.identityToken) {
+      throw new Error('No identity token received from Apple');
+    }
+
+    // Create Firebase OAuth credential from Apple's identity token
+    const provider = new OAuthProvider('apple.com');
+    const oAuthCredential = provider.credential({
+      idToken: appleCredential.identityToken,
+      rawNonce,
+    });
+
+    // Sign in to Firebase
+    const result = await signInWithCredential(auth, oAuthCredential);
+
+    // Build display name from Apple credential (only provided on first sign-in)
+    const displayName = appleCredential.fullName
+      ? [appleCredential.fullName.givenName, appleCredential.fullName.familyName]
+          .filter(Boolean)
+          .join(' ') || null
+      : null;
+
+    // Update Firebase profile with display name if Apple provided it
+    if (displayName) {
+      await updateProfile(result.user, { displayName });
+    }
+
+    // Create Firestore user profile + default household for new users
+    const existingProfile = await getUserProfile(result.user.uid);
+    if (!existingProfile) {
+      await createUserProfile({
+        uid: result.user.uid,
+        email: result.user.email || '',
+        displayName: displayName || result.user.displayName || 'User',
+        emailVerified: true, // Apple-verified emails are always verified
+      });
+      await createDefaultHousehold(result.user.uid);
+    }
+
+    return result.user;
+  } catch (error: any) {
+    // Don't treat user cancellation as an error
+    if (error.code === 'ERR_REQUEST_CANCELED') {
+      throw error;
+    }
+    console.error('Apple sign in error:', error);
+    throw new Error(getAuthErrorMessage(error.code));
+  }
+}
+
+/**
+ * Generate a cryptographically secure random nonce string
+ */
+function generateNonce(length = 32): string {
+  const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const randomBytes = getRandomBytes(length);
+  return Array.from(randomBytes)
+    .map((byte) => charset[byte % charset.length])
+    .join('');
+}
+
+/**
  * Convert Firebase auth error codes to user-friendly messages
  */
 function getAuthErrorMessage(errorCode: string): string {
@@ -129,6 +221,8 @@ function getAuthErrorMessage(errorCode: string): string {
       return 'Too many failed attempts. Please try again later.';
     case 'auth/network-request-failed':
       return 'Network error. Please check your connection and try again.';
+    case 'auth/account-exists-with-different-credential':
+      return 'An account already exists with this email using a different sign-in method.';
     default:
       return 'An error occurred. Please try again.';
   }
