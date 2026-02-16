@@ -1,6 +1,8 @@
 /**
  * Sign In screen
- * Email/password and Apple authentication
+ * Email/password, Apple, Google, and Facebook authentication.
+ * Google & Facebook use native buttons in dev/production builds
+ * and styled placeholders in Expo Go.
  */
 
 import { ThemedView } from '@/components/themed-view';
@@ -8,7 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Typography } from '@/components/ui/typography';
 import { useTheme } from '@/lib/contexts/theme-context';
-import { signIn, signInWithApple } from '@/lib/services/auth-service';
+import {
+  signIn,
+  signInWithApple,
+  signInWithFacebook,
+  signInWithGoogle,
+} from '@/lib/services/auth-service';
+import { isExpoGo } from '@/lib/utils/expo-env';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -20,6 +28,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+// ---------------------------------------------------------------------------
+// Conditionally load native social-auth button components (unavailable in Expo Go)
+// ---------------------------------------------------------------------------
+let GoogleSigninButton: any = null;
+let LoginButton: any = null;
+
+if (!isExpoGo) {
+  GoogleSigninButton =
+    require('@react-native-google-signin/google-signin').GoogleSigninButton;
+  LoginButton = require('react-native-fbsdk-next').LoginButton;
+}
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -43,7 +63,6 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       await signIn({ email: email.trim(), password });
-      // Navigation handled by AuthContext redirect
     } catch (error: any) {
       Alert.alert('Sign In Failed', error.message);
     } finally {
@@ -55,15 +74,46 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       await signInWithApple();
-      // Navigation handled by AuthContext redirect
     } catch (error: any) {
-      // Don't show alert if user cancelled
       if (error.code !== 'ERR_REQUEST_CANCELED') {
         Alert.alert('Sign In Failed', error.message);
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      if (error.code !== 'SIGN_IN_CANCELLED' && error.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert('Sign In Failed', error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFacebookSignIn = async () => {
+    setLoading(true);
+    try {
+      await signInWithFacebook();
+    } catch (error: any) {
+      if (error.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert('Sign In Failed', error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showExpoGoAlert = (provider: string) => {
+    Alert.alert(
+      'Not Available',
+      `${provider} Sign-In requires a development build. This button is a placeholder in Expo Go.`,
+    );
   };
 
   return (
@@ -118,26 +168,69 @@ export default function SignInScreen() {
               disabled={loading}
             />
 
-            {appleAuthAvailable && (
-              <>
-                <View style={styles.divider}>
-                  <View style={styles.dividerLine} />
-                  <Typography muted style={styles.dividerText}>or</Typography>
-                  <View style={styles.dividerLine} />
-                </View>
+            {/* ---- Social sign-in section ---- */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Typography muted style={styles.dividerText}>or</Typography>
+              <View style={styles.dividerLine} />
+            </View>
 
-                <AppleAuthentication.AppleAuthenticationButton
-                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                  buttonStyle={
-                    theme === 'dark'
-                      ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                      : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-                  }
-                  cornerRadius={8}
-                  style={styles.appleButton}
-                  onPress={handleAppleSignIn}
+            {/* Apple */}
+            {appleAuthAvailable && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={
+                  theme === 'dark'
+                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                }
+                cornerRadius={8}
+                style={styles.socialButton}
+                onPress={handleAppleSignIn}
+              />
+            )}
+
+            {/* Google */}
+            {isExpoGo ? (
+              <Button
+                title="Continue with Google"
+                onPress={() => showExpoGoAlert('Google')}
+                variant="outlined"
+                size="lg"
+                style={styles.socialButton}
+                disabled={loading}
+              />
+            ) : (
+              GoogleSigninButton && (
+                <GoogleSigninButton
+                  size={GoogleSigninButton.Size.Wide}
+                  color={GoogleSigninButton.Color.Dark}
+                  onPress={handleGoogleSignIn}
+                  disabled={loading}
+                  style={styles.socialButton}
                 />
-              </>
+              )
+            )}
+
+            {/* Facebook */}
+            {isExpoGo ? (
+              <Button
+                title="Continue with Facebook"
+                onPress={() => showExpoGoAlert('Facebook')}
+                variant="outlined"
+                size="lg"
+                style={styles.socialButton}
+                disabled={loading}
+              />
+            ) : (
+              <Button
+                title="Continue with Facebook"
+                onPress={handleFacebookSignIn}
+                variant="outlined"
+                size="lg"
+                style={styles.socialButton}
+                disabled={loading}
+              />
             )}
 
             <View style={styles.footer}>
@@ -198,13 +291,14 @@ const styles = StyleSheet.create({
   dividerText: {
     marginHorizontal: 12,
   },
-  appleButton: {
+  socialButton: {
     width: '100%',
     height: 48,
+    marginBottom: 12,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 12,
   },
 });

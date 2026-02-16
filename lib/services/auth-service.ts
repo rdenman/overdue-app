@@ -1,12 +1,15 @@
 /**
  * Authentication service
- * Handles all Firebase Auth operations
+ * Handles all Firebase Auth operations including social sign-in (Apple, Google, Facebook).
+ * Google and Facebook use conditional require() to avoid crashing in Expo Go.
  */
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { digestStringAsync, CryptoDigestAlgorithm, getRandomBytes } from 'expo-crypto';
 import {
   createUserWithEmailAndPassword,
+  FacebookAuthProvider,
+  GoogleAuthProvider,
   OAuthProvider,
   signInWithCredential,
   signOut as firebaseSignOut,
@@ -17,8 +20,30 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
+import { isExpoGo } from '../utils/expo-env';
 import { createDefaultHousehold } from './household-service';
 import { createUserProfile, getUserProfile } from './user-service';
+
+// ---------------------------------------------------------------------------
+// Conditionally load native social-auth SDKs (unavailable in Expo Go)
+// ---------------------------------------------------------------------------
+let GoogleSignin: any = null;
+let LoginManager: any = null;
+let AccessToken: any = null;
+
+if (!isExpoGo) {
+  const google = require('@react-native-google-signin/google-signin');
+  GoogleSignin = google.GoogleSignin;
+
+  // Configure Google Sign-In with the web client ID from Firebase console
+  GoogleSignin.configure({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  });
+
+  const facebook = require('react-native-fbsdk-next');
+  LoginManager = facebook.LoginManager;
+  AccessToken = facebook.AccessToken;
+}
 
 export interface SignUpParams {
   email: string;
@@ -181,6 +206,106 @@ export async function signInWithApple(): Promise<FirebaseUser> {
       throw error;
     }
     console.error('Apple sign in error:', error);
+    throw new Error(getAuthErrorMessage(error.code));
+  }
+}
+
+/**
+ * Sign in with Google
+ * Uses the native Google Sign-In SDK → Firebase credential flow.
+ * Only available in custom dev builds / production (not Expo Go).
+ */
+export async function signInWithGoogle(): Promise<FirebaseUser> {
+  if (isExpoGo) {
+    throw new Error('Google Sign-In is not available in Expo Go. Use a development build to test this feature.');
+  }
+
+  try {
+    // Ensure Google Sign-In is configured
+    await GoogleSignin.hasPlayServices();
+    const response = await GoogleSignin.signIn();
+    const idToken = response.data?.idToken;
+
+    if (!idToken) {
+      throw new Error('No ID token received from Google');
+    }
+
+    // Create Firebase credential and sign in
+    const credential = GoogleAuthProvider.credential(idToken);
+    const result = await signInWithCredential(auth, credential);
+
+    // Create Firestore user profile + default household for new users
+    const existingProfile = await getUserProfile(result.user.uid);
+    if (!existingProfile) {
+      await createUserProfile({
+        uid: result.user.uid,
+        email: result.user.email || '',
+        displayName: result.user.displayName || 'User',
+        emailVerified: result.user.emailVerified,
+      });
+      await createDefaultHousehold(result.user.uid);
+    }
+
+    return result.user;
+  } catch (error: any) {
+    // Don't treat user cancellation as an error
+    if (error.code === 'SIGN_IN_CANCELLED' || error.code === 'ERR_REQUEST_CANCELED') {
+      throw error;
+    }
+    console.error('Google sign in error:', error);
+    throw new Error(getAuthErrorMessage(error.code));
+  }
+}
+
+/**
+ * Sign in with Facebook
+ * Uses the native Facebook SDK → Firebase credential flow.
+ * Only available in custom dev builds / production (not Expo Go).
+ */
+export async function signInWithFacebook(): Promise<FirebaseUser> {
+  if (isExpoGo) {
+    throw new Error('Facebook Sign-In is not available in Expo Go. Use a development build to test this feature.');
+  }
+
+  try {
+    // Request login with public_profile and email permissions
+    const loginResult = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+
+    if (loginResult.isCancelled) {
+      const cancelError: any = new Error('User cancelled Facebook login');
+      cancelError.code = 'ERR_REQUEST_CANCELED';
+      throw cancelError;
+    }
+
+    // Get the access token
+    const tokenData = await AccessToken.getCurrentAccessToken();
+    if (!tokenData?.accessToken) {
+      throw new Error('No access token received from Facebook');
+    }
+
+    // Create Firebase credential and sign in
+    const credential = FacebookAuthProvider.credential(tokenData.accessToken);
+    const result = await signInWithCredential(auth, credential);
+
+    // Create Firestore user profile + default household for new users
+    const existingProfile = await getUserProfile(result.user.uid);
+    if (!existingProfile) {
+      await createUserProfile({
+        uid: result.user.uid,
+        email: result.user.email || '',
+        displayName: result.user.displayName || 'User',
+        emailVerified: result.user.emailVerified,
+      });
+      await createDefaultHousehold(result.user.uid);
+    }
+
+    return result.user;
+  } catch (error: any) {
+    // Don't treat user cancellation as an error
+    if (error.code === 'ERR_REQUEST_CANCELED') {
+      throw error;
+    }
+    console.error('Facebook sign in error:', error);
     throw new Error(getAuthErrorMessage(error.code));
   }
 }

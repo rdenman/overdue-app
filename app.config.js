@@ -16,6 +16,7 @@ export default {
       supportsTablet: true,
       bundleIdentifier: 'com.overdueapp.mobile',
       usesAppleSignIn: true,
+      googleServicesFile: './GoogleService-Info.plist',
     },
     android: {
       adaptiveIcon: {
@@ -27,6 +28,7 @@ export default {
       package: 'com.overdueapp.mobile',
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
+      googleServicesFile: './google-services.json',
     },
     plugins: [
       'expo-router',
@@ -45,6 +47,16 @@ export default {
       ],
       'expo-notifications',
       '@react-native-community/datetimepicker',
+      '@react-native-google-signin/google-signin',
+      [
+        'react-native-fbsdk-next',
+        {
+          appID: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID || 'PLACEHOLDER',
+          clientToken: process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN || 'PLACEHOLDER',
+          displayName: 'Overdue',
+          scheme: `fb${process.env.EXPO_PUBLIC_FACEBOOK_APP_ID || 'PLACEHOLDER'}`,
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,
@@ -58,6 +70,8 @@ export default {
       firebaseStorageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
       firebaseMessagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       firebaseAppId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+      googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      facebookAppId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID,
     },
   },
 };
