@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
+import { Badge, Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -13,16 +14,35 @@ export default function TabLayout() {
   const { user } = useAuth();
   const showVerificationBadge = user && !user.emailVerified;
 
+  if (Platform.OS === 'ios') {
+    return (
+      <NativeTabs tintColor={tintColor}>
+        <NativeTabs.Trigger name="(home)">
+          <Icon sf="house.fill" />
+          <Label>Home</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="explore">
+          <Icon sf="person.2.fill" />
+          <Label>Households</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="settings">
+          <Icon sf="gearshape.fill" />
+          <Label>Settings</Label>
+          <Badge hidden={!showVerificationBadge} />
+        </NativeTabs.Trigger>
+      </NativeTabs>
+    );
+  }
+
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: tintColor,
         tabBarButton: HapticTab,
-        headerRightContainerStyle: { paddingRight: 16 },
-        headerLeftContainerStyle: { paddingLeft: 16 },
+        headerShown: false,
       }}>
       <Tabs.Screen
-        name="index"
+        name="(home)"
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,

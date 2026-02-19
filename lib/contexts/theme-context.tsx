@@ -1,11 +1,13 @@
 /**
  * Theme Context
- * Manages theme preference (light/dark) with AsyncStorage persistence
+ * Manages theme preference (light/dark) with AsyncStorage persistence.
+ * Uses Appearance.setColorScheme() to sync native iOS components (UITabBar,
+ * UINavigationBar, etc.) with the user's chosen theme.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { Appearance, useColorScheme } from 'react-native';
 
 type Theme = 'light' | 'dark';
 
@@ -19,36 +21,35 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const THEME_STORAGE_KEY = '@theme_preference';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const systemColorScheme = useColorScheme();
-  const [theme, setTheme] = useState<Theme>(systemColorScheme ?? 'light');
+  const systemColorScheme = useColorScheme() ?? 'light';
+  const [theme, setTheme] = useState<Theme>(systemColorScheme);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load theme preference on mount
+  // Load stored preference on mount and override native appearance to match.
   useEffect(() => {
     async function loadTheme() {
       try {
         const storedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
         if (storedTheme === 'light' || storedTheme === 'dark') {
           setTheme(storedTheme);
-        } else {
-          // No stored preference, use system default
-          setTheme(systemColorScheme ?? 'light');
+          Appearance.setColorScheme(storedTheme);
         }
+        // No stored preference — follow system default (no override needed)
       } catch (error) {
         console.error('Failed to load theme preference:', error);
-        setTheme(systemColorScheme ?? 'light');
       } finally {
         setIsLoaded(true);
       }
     }
 
     loadTheme();
-  }, [systemColorScheme]);
+  }, []);
 
   const toggleTheme = async () => {
     const newTheme: Theme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-    
+    Appearance.setColorScheme(newTheme);
+
     try {
       await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
     } catch (error) {
