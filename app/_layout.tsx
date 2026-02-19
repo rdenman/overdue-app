@@ -37,7 +37,7 @@ function RootLayoutNav() {
     if (!user && !inAuthGroup) {
       router.replace('/(auth)/sign-in');
     } else if (user && inAuthGroup) {
-      router.replace('/(tabs)');
+      router.replace('/');
     }
 
     // Request notification permissions once when user first authenticates

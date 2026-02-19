@@ -8,6 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
 import { Typography } from '@/components/ui/typography';
+import { useTheme } from '@/lib/contexts/theme-context';
 import { useAuth } from '@/lib/hooks/use-auth';
 import {
   useCompleteChore,
@@ -16,7 +17,6 @@ import {
 } from '@/lib/hooks/use-chores';
 import { useUserHouseholds } from '@/lib/hooks/use-households';
 import { useThemeColor } from '@/lib/hooks/use-theme-color';
-import { useTheme } from '@/lib/contexts/theme-context';
 import { isChoreOverdue } from '@/lib/services/chore-service';
 import { Chore } from '@/lib/types/chore';
 import { Stack, useRouter } from 'expo-router';
@@ -39,7 +39,6 @@ export default function CalendarScreen() {
   const textColor = useThemeColor({}, 'text');
   const tintColor = useThemeColor({}, 'tint');
   const errorColor = useThemeColor({}, 'error');
-  const cardBg = useThemeColor({}, 'cardBackground');
   const borderColor = useThemeColor({}, 'border');
 
   const todayStr = toDateString(new Date());

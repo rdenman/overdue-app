@@ -36,7 +36,6 @@ export default function HouseholdSettingsScreen() {
   const router = useRouter();
 
   const backgroundColor = useThemeColor({}, 'background');
-  const errorColor = useThemeColor({}, 'error');
 
   // ── Queries ──
   const { data: household, isLoading: loadingHousehold } = useHousehold(id);

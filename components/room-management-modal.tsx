@@ -142,7 +142,7 @@ export function RoomManagementModal({
       visible={visible}
       onClose={onClose}
       title="Manage Rooms"
-      maxHeight={600}
+      estimatedHeight={600}
     >
       <ScrollView style={styles.content}>
         {/* Existing rooms list */}
