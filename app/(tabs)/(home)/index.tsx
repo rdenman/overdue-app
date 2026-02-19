@@ -17,7 +17,7 @@ import { isChoreOverdue } from '@/lib/services/chore-service';
 import { scheduleAllNotifications } from '@/lib/services/notification-service';
 import { Chore } from '@/lib/types/chore';
 import { useNavigation, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -30,7 +30,7 @@ export default function TodayScreen() {
   const navigation = useNavigation();
   const backgroundColor = useThemeColor({}, 'background');
 
-  const { data: households = [] } = useUserHouseholds(user?.uid);
+  const { data: households = [], isPending: householdsPending } = useUserHouseholds(user?.uid);
   const householdIds = useMemo(() => households.map((h) => h.id), [households]);
   const householdMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -43,9 +43,21 @@ export default function TodayScreen() {
 
   const {
     data: allChores = [],
-    isLoading,
+    isPending: choresPending,
     refetch,
   } = useTodayChores(user?.uid, householdIds);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetch]);
+
+  const isLoading = householdsPending || (householdIds.length > 0 && choresPending);
 
   // Configure header with calendar button
   useLayoutEffect(() => {
@@ -121,8 +133,8 @@ export default function TodayScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderChore}
           contentContainerStyle={styles.list}
-          refreshing={isLoading}
-          onRefresh={refetch}
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
           ListEmptyComponent={
             <EmptyState
               title="All caught up!"

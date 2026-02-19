@@ -148,7 +148,15 @@ export function useCreateChore(householdId: string, userId?: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.chores.household(householdId),
       });
-      if (userId) syncNotificationsFromCache(queryClient, userId);
+      if (userId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.chores.today(userId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.chores.allHouseholds(userId),
+        });
+        syncNotificationsFromCache(queryClient, userId);
+      }
     },
   });
 }
@@ -165,7 +173,15 @@ export function useUpdateChore(choreId: string, householdId: string, userId?: st
       queryClient.invalidateQueries({
         queryKey: queryKeys.chores.household(householdId),
       });
-      if (userId) syncNotificationsFromCache(queryClient, userId);
+      if (userId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.chores.today(userId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.chores.allHouseholds(userId),
+        });
+        syncNotificationsFromCache(queryClient, userId);
+      }
     },
   });
 }
@@ -179,7 +195,15 @@ export function useDeleteChore(householdId: string, userId?: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.chores.household(householdId),
       });
-      if (userId) syncNotificationsFromCache(queryClient, userId);
+      if (userId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.chores.today(userId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.chores.allHouseholds(userId),
+        });
+        syncNotificationsFromCache(queryClient, userId);
+      }
     },
   });
 }
