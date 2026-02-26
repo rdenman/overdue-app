@@ -22,7 +22,7 @@ import {
   RoomCreateInput,
   RoomUpdateInput,
 } from '../types/room';
-import { getHouseholdMember } from './household-service';
+import { getHouseholdMember } from './membership-service';
 
 /**
  * Default rooms created for new households

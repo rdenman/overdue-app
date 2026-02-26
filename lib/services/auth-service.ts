@@ -38,6 +38,7 @@ if (!isExpoGo) {
   // Configure Google Sign-In with the web client ID from Firebase console
   GoogleSignin.configure({
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
   });
 
   const facebook = require('react-native-fbsdk-next');

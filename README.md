@@ -171,7 +171,16 @@ pnpm android
 pnpm lint
 
 # Type check
-pnpm tsc --noEmit
+pnpm typecheck
+
+# Run unit & integration tests
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run tests with coverage report
+pnpm test:coverage
 
 # Seed test data (creates test users, households, and chores)
 pnpm seed
@@ -216,27 +225,89 @@ pnpm cleanup
 
 See [`scripts/README.md`](scripts/README.md) for more details.
 
-### Testing User Flows
+## Testing
 
-1. **Sign Up Flow:**
-   - Create account with email/password/displayName
-   - Verify email verification banner appears
-   - Check that "Personal" household is auto-created
-   
-2. **Sign In Flow:**
-   - Sign out and sign back in
-   - Verify auth state persists
-   
-3. **Password Reset:**
-   - Test forgot password flow
-   - Check email delivery
+The project uses **unit/integration tests** (Jest + React Native Testing Library) for fast feedback on business logic and components.
 
-4. **Household Management:**
-   - Create a new household
-   - Invite a member by email
-   - Accept/decline invitations
-   - View household members
-   - Manage household settings
+### Quick Start
+
+```bash
+# Run all unit & integration tests
+pnpm test
+
+# Run in watch mode during development
+pnpm test:watch
+
+# Run with coverage report
+pnpm test:coverage
+```
+
+### Unit Tests
+
+**Tool:** [Jest](https://jestjs.io/) via the `jest-expo` preset
+
+Unit tests cover pure business logic that has no React or Firebase runtime dependency. All Firebase and Expo native modules are mocked in `jest.setup.ts`.
+
+**What's tested:**
+
+| File | What it covers |
+|------|---------------|
+| `chore-service.test.ts` | `calculateNextDueDate` (all interval types, month rollover, input immutability), `isChoreOverdue` (null due dates, completed chores, future dates), `getUpcomingDueDates` (sequence generation, edge cases) |
+| `notification-service.test.ts` | Permission requests, daily reminder scheduling, chore alert scheduling, skip logic for completed/no-deadline chores, master enable/disable toggle |
+| `query-keys.test.ts` | Correct key structure for all query key factories (households, rooms, chores, invites, users) |
+
+**Location:** `__tests__/services/`
+
+### Component Tests
+
+**Tool:** [React Native Testing Library](https://callstack.github.io/react-native-testing-library/) (RNTL)
+
+Component tests render individual UI components in isolation and verify they display the right content and respond to user interactions. A custom `render` wrapper in `__tests__/helpers/test-utils.tsx` provides QueryClient and Theme providers automatically.
+
+**What's tested:**
+
+| File | What it covers |
+|------|---------------|
+| `chore-card.test.tsx` | All visual states (due today, overdue, completed, no deadline), metadata display (assignee, household, room), onComplete/onUndo/onPress callbacks |
+| `invitation-card.test.tsx` | Household name, inviter, role chip, expiry countdown, Accept/Decline button callbacks |
+| `button.test.tsx` | Title rendering, press handler, disabled and loading states, size variants |
+| `input.test.tsx` | Label, error message, placeholder, text change events |
+| `chip.test.tsx` | Pressable vs static rendering, selected state, disabled state, size and color variants |
+| `email-verification-banner.test.tsx` | Conditional rendering based on auth/verification state, resend email action |
+
+**Location:** `__tests__/components/`
+
+### Hook Integration Tests
+
+**Tool:** RNTL's `renderHook` + Jest
+
+Hook tests verify that custom React hooks interact correctly with their dependencies (React Query, AsyncStorage, NetInfo).
+
+**What's tested:**
+
+| File | What it covers |
+|------|---------------|
+| `use-chores.test.ts` | Query enabled/disabled based on params, correct service function calls, query key usage |
+| `use-notification-settings.test.ts` | Default values on first load, AsyncStorage round-trip, partial update merging, graceful error recovery |
+| `use-network-status.test.ts` | Online/offline state transitions, null value handling, NetInfo subscription lifecycle, cleanup on unmount |
+
+**Location:** `__tests__/hooks/`
+
+### Test Helpers
+
+Shared utilities live in `__tests__/helpers/` (excluded from test discovery):
+
+- **`test-utils.tsx`** — Custom `render` function that wraps components in `QueryClientProvider` and a test `ThemeProvider`. Also exports `createTestWrapper` for `renderHook` tests.
+- **`factories.ts`** — Type-safe factory functions (`buildChore`, `buildOverdueChore`, `buildCompletedChore`, `buildHousehold`, `buildHouseholdMember`, `buildInvite`) for creating mock domain objects with sensible defaults and easy overrides.
+
+### CI/CD
+
+GitHub Actions workflow runs tests automatically:
+
+**`test.yml`** — Runs on every PR and push to `main`:
+- Installs dependencies with `pnpm install --frozen-lockfile`
+- Runs `pnpm test` (all Jest unit, component, and hook tests)
+- Uploads coverage report as an artifact on PRs
 
 ## Documentation
 
