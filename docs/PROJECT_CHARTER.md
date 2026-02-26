@@ -36,8 +36,6 @@ Primary use case:
 
 ### Constraints
 - No web app
-- No custom native modules (maintains Expo Go compatibility)
-- Memory-only cache for offline support (tradeoff for Expo Go)
 - Prefer simple, readable code over abstractions
 - Strong typing everywhere
 - Max ~300 LOC per file
@@ -143,11 +141,6 @@ Within an active app session, users can work offline with previously loaded data
 - **Requires initial online load**: First launch or after restart requires network connection
 - **Session-scoped**: Offline capabilities only work during current app session
 - Users cannot invite or accept household invites while offline
-
-### Technical Constraint
-Persistent offline cache requires native modules which conflicts with Expo Go compatibility.
-To enable full offline-first persistence, app would need to migrate to @react-native-firebase
-and use development builds (EAS Build).
 
 ### Sync Model
 - UI updates optimistically
