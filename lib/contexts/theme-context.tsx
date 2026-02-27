@@ -21,8 +21,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const THEME_STORAGE_KEY = '@theme_preference';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const systemColorScheme = useColorScheme() ?? 'light';
-  const [theme, setTheme] = useState<Theme>(systemColorScheme);
+  const systemColorScheme = useColorScheme();
+  const resolvedScheme: Theme = systemColorScheme === 'dark' ? 'dark' : 'light';
+  const [theme, setTheme] = useState<Theme>(resolvedScheme);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load stored preference on mount and override native appearance to match.

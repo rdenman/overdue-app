@@ -11,7 +11,6 @@ export default {
     icon: './assets/images/icon.png',
     scheme: 'overdueapp',
     userInterfaceStyle: 'automatic',
-    newArchEnabled: true,
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.overdueapp.mobile',
@@ -36,8 +35,9 @@ export default {
         {
           ios: {
             useFrameworks: 'static',
-            buildReactNativeFromSource: true,
           },
+          buildReactNativeFromSource: true,
+          useHermesV1: true,
         },
       ],
       'expo-router',
@@ -54,6 +54,9 @@ export default {
           },
         },
       ],
+      'expo-font',
+      'expo-image',
+      'expo-web-browser',
       'expo-notifications',
       '@react-native-community/datetimepicker',
       '@react-native-google-signin/google-signin',
