@@ -10,7 +10,7 @@ import {
   setDoc,
   Timestamp,
   updateDoc,
-} from 'firebase/firestore';
+} from '@react-native-firebase/firestore';
 import { firestore } from '../firebase/config';
 import { userConverter } from '../firebase/converters';
 import { User, UserCreateInput, UserUpdateInput } from '../types/user';
@@ -20,13 +20,8 @@ import { User, UserCreateInput, UserUpdateInput } from '../types/user';
  */
 export async function getUserProfile(uid: string): Promise<User | null> {
   try {
-    const userRef = doc(firestore, 'users', uid).withConverter(userConverter);
-    const userSnap = await getDoc(userRef);
-    
-    if (userSnap.exists()) {
-      return userSnap.data();
-    }
-    return null;
+    const snap = await getDoc(doc(firestore, 'users', uid));
+    return userConverter.fromSnapshot(snap);
   } catch (error) {
     console.error('Error getting user profile:', error);
     throw new Error('Failed to load user profile');
@@ -45,10 +40,9 @@ export async function createUserProfile(input: UserCreateInput): Promise<User> {
       createdAt: now,
       updatedAt: now,
     };
-    
-    const userRef = doc(firestore, 'users', input.uid).withConverter(userConverter);
-    await setDoc(userRef, user);
-    
+
+    await setDoc(doc(firestore, 'users', input.uid), userConverter.toFirestore(user));
+
     return user;
   } catch (error) {
     console.error('Error creating user profile:', error);
@@ -64,8 +58,7 @@ export async function updateUserProfile(
   updates: UserUpdateInput
 ): Promise<void> {
   try {
-    const userRef = doc(firestore, 'users', uid);
-    await updateDoc(userRef, {
+    await updateDoc(doc(firestore, 'users', uid), {
       ...updates,
       updatedAt: serverTimestamp(),
     });

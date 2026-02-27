@@ -20,6 +20,9 @@
     "@react-native-async-storage/async-storage": "~2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-community/netinfo": "^11.4.1",
+    "@react-native-firebase/app": "^23.8.6",
+    "@react-native-firebase/auth": "^23.8.6",
+    "@react-native-firebase/firestore": "^23.8.6",
     "@react-native-google-signin/google-signin": "^16.1.1",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
@@ -27,6 +30,7 @@
     "@tanstack/react-query": "^5.90.20",
     "expo": "~54.0.33",
     "expo-apple-authentication": "~8.0.8",
+    "expo-build-properties": "^55.0.9",
     "expo-constants": "~18.0.13",
     "expo-crypto": "~15.0.8",
     "expo-dev-client": "~6.0.20",
@@ -41,7 +45,6 @@
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.10",
-    "firebase": "^12.9.0",
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-calendars": "^1.1314.0",
@@ -61,6 +64,7 @@
     "dotenv": "^16.4.7",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "firebase": "^12.9.0",
     "jest-expo": "~54.0.17",
     "tsx": "^4.19.2",
     "typescript": "~5.9.2"
@@ -80,7 +84,7 @@
       "__tests__/"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|native-base|react-native-svg|@tanstack/react-query|firebase|@firebase))"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|@react-native-firebase/.*|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|native-base|react-native-svg|@tanstack/react-query|firebase|@firebase))"
     ]
   }
 }

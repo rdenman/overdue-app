@@ -3,7 +3,7 @@
  * Create mock domain objects with sensible defaults that can be overridden.
  */
 
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@react-native-firebase/firestore';
 import type { Chore, Interval, Completion } from '@/lib/types/chore';
 import type { Household, HouseholdMember } from '@/lib/types/household';
 import type { HouseholdInvite } from '@/lib/types/invite';

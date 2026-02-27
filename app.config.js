@@ -26,11 +26,20 @@ export default {
         monochromeImage: './assets/images/android-icon-monochrome.png',
       },
       package: 'com.overdueapp.mobile',
-      edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       googleServicesFile: './google-services.json',
     },
     plugins: [
+      '@react-native-firebase/app',
+      [
+        'expo-build-properties',
+        {
+          ios: {
+            useFrameworks: 'static',
+            buildReactNativeFromSource: true,
+          },
+        },
+      ],
       'expo-router',
       'expo-apple-authentication',
       [

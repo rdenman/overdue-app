@@ -14,7 +14,7 @@ import {
   Timestamp,
   updateDoc,
   where,
-} from 'firebase/firestore';
+} from '@react-native-firebase/firestore';
 import { firestore } from '../firebase/config';
 import { roomConverter } from '../firebase/converters';
 import {
@@ -24,9 +24,6 @@ import {
 } from '../types/room';
 import { getHouseholdMember } from './membership-service';
 
-/**
- * Default rooms created for new households
- */
 const DEFAULT_ROOMS = [
   { name: 'Living Room', sortOrder: 1 },
   { name: 'Kitchen', sortOrder: 2 },
@@ -39,13 +36,10 @@ const DEFAULT_ROOMS = [
  */
 export async function createRoom(input: RoomCreateInput): Promise<Room> {
   try {
-    const roomsRef = collection(
-      firestore,
-      'households',
-      input.householdId,
-      'rooms'
+    const roomRef = doc(
+      collection(firestore, 'households', input.householdId, 'rooms'),
     );
-    const roomRef = doc(roomsRef);
+
     const now = Timestamp.now();
 
     const room: Room = {
@@ -53,20 +47,12 @@ export async function createRoom(input: RoomCreateInput): Promise<Room> {
       householdId: input.householdId,
       name: input.name,
       isDefault: input.isDefault ?? false,
-      sortOrder: input.sortOrder ?? 999, // Custom rooms default to end
+      sortOrder: input.sortOrder ?? 999,
       createdAt: now,
       updatedAt: now,
     };
 
-    const roomDocRef = doc(
-      firestore,
-      'households',
-      input.householdId,
-      'rooms',
-      room.id
-    ).withConverter(roomConverter);
-    
-    await setDoc(roomDocRef, room);
+    await setDoc(roomRef, roomConverter.toFirestore(room));
     return room;
   } catch (error) {
     console.error('Error creating room:', error);
@@ -80,7 +66,7 @@ export async function createRoom(input: RoomCreateInput): Promise<Room> {
 export async function createDefaultRooms(householdId: string): Promise<Room[]> {
   try {
     const rooms: Room[] = [];
-    
+
     for (const defaultRoom of DEFAULT_ROOMS) {
       const room = await createRoom({
         householdId,
@@ -90,7 +76,7 @@ export async function createDefaultRooms(householdId: string): Promise<Room[]> {
       });
       rooms.push(room);
     }
-    
+
     return rooms;
   } catch (error) {
     console.error('Error creating default rooms:', error);
@@ -106,20 +92,11 @@ export async function getRoom(
   roomId: string
 ): Promise<Room | null> {
   try {
-    const roomRef = doc(
-      firestore,
-      'households',
-      householdId,
-      'rooms',
-      roomId
-    ).withConverter(roomConverter);
-    
-    const roomSnap = await getDoc(roomRef);
-    
-    if (roomSnap.exists()) {
-      return roomSnap.data();
-    }
-    return null;
+    const snap = await getDoc(
+      doc(firestore, 'households', householdId, 'rooms', roomId),
+    );
+
+    return roomConverter.fromSnapshot(snap);
   } catch (error) {
     console.error('Error getting room:', error);
     throw new Error('Failed to load room');
@@ -131,18 +108,15 @@ export async function getRoom(
  */
 export async function getHouseholdRooms(householdId: string): Promise<Room[]> {
   try {
-    const roomsRef = collection(
-      firestore,
-      'households',
-      householdId,
-      'rooms'
-    ).withConverter(roomConverter);
-    
-    const roomsSnap = await getDocs(roomsRef);
-    const rooms = roomsSnap.docs.map((doc) => doc.data());
-    
-    // Sort by sortOrder
-    return rooms.sort((a, b) => a.sortOrder - b.sortOrder);
+    const snap = await getDocs(
+      collection(firestore, 'households', householdId, 'rooms'),
+    );
+
+    const rooms = snap.docs
+      .map((d: any) => roomConverter.fromSnapshot(d))
+      .filter((r: any): r is Room => r !== null);
+
+    return rooms.sort((a: Room, b: Room) => a.sortOrder - b.sortOrder);
   } catch (error) {
     console.error('Error getting household rooms:', error);
     throw new Error('Failed to load rooms');
@@ -158,18 +132,13 @@ export async function updateRoom(
   updates: RoomUpdateInput
 ): Promise<void> {
   try {
-    const roomRef = doc(
-      firestore,
-      'households',
-      householdId,
-      'rooms',
-      roomId
+    await updateDoc(
+      doc(firestore, 'households', householdId, 'rooms', roomId),
+      {
+        ...updates,
+        updatedAt: Timestamp.now(),
+      },
     );
-    
-    await updateDoc(roomRef, {
-      ...updates,
-      updatedAt: Timestamp.now(),
-    });
   } catch (error) {
     console.error('Error updating room:', error);
     throw new Error('Failed to update room');
@@ -186,7 +155,6 @@ export async function deleteRoom(
   requestingUserId: string
 ): Promise<void> {
   try {
-    // Verify requesting user is a household admin
     const member = await getHouseholdMember(householdId, requestingUserId);
     if (!member) {
       throw new Error('You are not a member of this household');
@@ -195,28 +163,21 @@ export async function deleteRoom(
       throw new Error('Only admins can delete rooms');
     }
 
-    // Delete all chores associated with this room
-    const choresRef = collection(firestore, 'chores');
-    const choresQuery = query(
-      choresRef,
-      where('householdId', '==', householdId),
-      where('roomId', '==', roomId)
+    const choresSnap = await getDocs(
+      query(
+        collection(firestore, 'chores'),
+        where('householdId', '==', householdId),
+        where('roomId', '==', roomId),
+      ),
     );
-    const choresSnap = await getDocs(choresQuery);
-    
+
     for (const choreDoc of choresSnap.docs) {
       await deleteDoc(choreDoc.ref);
     }
 
-    // Delete the room itself
-    const roomRef = doc(
-      firestore,
-      'households',
-      householdId,
-      'rooms',
-      roomId
+    await deleteDoc(
+      doc(firestore, 'households', householdId, 'rooms', roomId),
     );
-    await deleteDoc(roomRef);
   } catch (error) {
     console.error('Error deleting room:', error);
     throw error;

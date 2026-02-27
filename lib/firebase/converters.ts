@@ -1,14 +1,12 @@
 /**
  * Firestore data converters
- * Provides type-safe conversion between Firestore documents and TypeScript types
+ * Provides type-safe conversion between Firestore document snapshots and TypeScript types.
+ * React Native Firebase does not support withConverter(), so these are plain helper functions.
  */
 
-import {
-  DocumentData,
-  FirestoreDataConverter,
-  QueryDocumentSnapshot,
-  SnapshotOptions
-} from 'firebase/firestore';
+import { type FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+
+type DocumentSnapshot = FirebaseFirestoreTypes.DocumentSnapshot;
 import { Chore } from '../types/chore';
 import { Household, HouseholdMember } from '../types/household';
 import { HouseholdInvite } from '../types/invite';
@@ -26,8 +24,8 @@ import {
 /**
  * User converter
  */
-export const userConverter: FirestoreDataConverter<User> = {
-  toFirestore(user: User): DocumentData {
+export const userConverter = {
+  toFirestore(user: User): Record<string, unknown> {
     return {
       uid: user.uid,
       email: user.email,
@@ -37,11 +35,9 @@ export const userConverter: FirestoreDataConverter<User> = {
       updatedAt: user.updatedAt,
     };
   },
-  fromFirestore(
-    snapshot: QueryDocumentSnapshot,
-    options: SnapshotOptions
-  ): User {
-    const data = snapshot.data(options) as UserDocument;
+  fromSnapshot(snapshot: DocumentSnapshot): User | null {
+    const data = snapshot.data() as UserDocument | undefined;
+    if (!data) return null;
     return {
       uid: data.uid,
       email: data.email,
@@ -56,8 +52,8 @@ export const userConverter: FirestoreDataConverter<User> = {
 /**
  * Household converter
  */
-export const householdConverter: FirestoreDataConverter<Household> = {
-  toFirestore(household: Household): DocumentData {
+export const householdConverter = {
+  toFirestore(household: Household): Record<string, unknown> {
     return {
       id: household.id,
       name: household.name,
@@ -66,11 +62,9 @@ export const householdConverter: FirestoreDataConverter<Household> = {
       updatedAt: household.updatedAt,
     };
   },
-  fromFirestore(
-    snapshot: QueryDocumentSnapshot,
-    options: SnapshotOptions
-  ): Household {
-    const data = snapshot.data(options) as HouseholdDocument;
+  fromSnapshot(snapshot: DocumentSnapshot): Household | null {
+    const data = snapshot.data() as HouseholdDocument | undefined;
+    if (!data) return null;
     return {
       id: data.id,
       name: data.name,
@@ -84,8 +78,8 @@ export const householdConverter: FirestoreDataConverter<Household> = {
 /**
  * HouseholdMember converter
  */
-export const householdMemberConverter: FirestoreDataConverter<HouseholdMember> = {
-  toFirestore(member: HouseholdMember): DocumentData {
+export const householdMemberConverter = {
+  toFirestore(member: HouseholdMember): Record<string, unknown> {
     return {
       id: member.id,
       householdId: member.householdId,
@@ -94,11 +88,9 @@ export const householdMemberConverter: FirestoreDataConverter<HouseholdMember> =
       joinedAt: member.joinedAt,
     };
   },
-  fromFirestore(
-    snapshot: QueryDocumentSnapshot,
-    options: SnapshotOptions
-  ): HouseholdMember {
-    const data = snapshot.data(options) as HouseholdMemberDocument;
+  fromSnapshot(snapshot: DocumentSnapshot): HouseholdMember | null {
+    const data = snapshot.data() as HouseholdMemberDocument | undefined;
+    if (!data) return null;
     return {
       id: data.id,
       householdId: data.householdId,
@@ -112,8 +104,8 @@ export const householdMemberConverter: FirestoreDataConverter<HouseholdMember> =
 /**
  * Room converter
  */
-export const roomConverter: FirestoreDataConverter<Room> = {
-  toFirestore(room: Room): DocumentData {
+export const roomConverter = {
+  toFirestore(room: Room): Record<string, unknown> {
     return {
       id: room.id,
       householdId: room.householdId,
@@ -124,11 +116,9 @@ export const roomConverter: FirestoreDataConverter<Room> = {
       updatedAt: room.updatedAt,
     };
   },
-  fromFirestore(
-    snapshot: QueryDocumentSnapshot,
-    options: SnapshotOptions
-  ): Room {
-    const data = snapshot.data(options) as RoomDocument;
+  fromSnapshot(snapshot: DocumentSnapshot): Room | null {
+    const data = snapshot.data() as RoomDocument | undefined;
+    if (!data) return null;
     return {
       id: data.id,
       householdId: data.householdId,
@@ -144,9 +134,9 @@ export const roomConverter: FirestoreDataConverter<Room> = {
 /**
  * Chore converter
  */
-export const choreConverter: FirestoreDataConverter<Chore> = {
-  toFirestore(chore: Chore): DocumentData {
-    const data: DocumentData = {
+export const choreConverter = {
+  toFirestore(chore: Chore): Record<string, unknown> {
+    const data: Record<string, unknown> = {
       id: chore.id,
       householdId: chore.householdId,
       name: chore.name,
@@ -154,7 +144,7 @@ export const choreConverter: FirestoreDataConverter<Chore> = {
       createdAt: chore.createdAt,
       updatedAt: chore.updatedAt,
       interval: chore.interval,
-      dueAt: chore.dueAt ?? null, // Store null explicitly for Firestore ordering
+      dueAt: chore.dueAt ?? null,
       isOverdue: chore.isOverdue,
     };
 
@@ -165,11 +155,9 @@ export const choreConverter: FirestoreDataConverter<Chore> = {
 
     return data;
   },
-  fromFirestore(
-    snapshot: QueryDocumentSnapshot,
-    options: SnapshotOptions
-  ): Chore {
-    const data = snapshot.data(options) as ChoreDocument;
+  fromSnapshot(snapshot: DocumentSnapshot): Chore | null {
+    const data = snapshot.data() as ChoreDocument | undefined;
+    if (!data) return null;
     return {
       id: data.id,
       householdId: data.householdId,
@@ -191,8 +179,8 @@ export const choreConverter: FirestoreDataConverter<Chore> = {
 /**
  * Invite converter
  */
-export const inviteConverter: FirestoreDataConverter<HouseholdInvite> = {
-  toFirestore(invite: HouseholdInvite): DocumentData {
+export const inviteConverter = {
+  toFirestore(invite: HouseholdInvite): Record<string, unknown> {
     return {
       id: invite.id,
       householdId: invite.householdId,
@@ -206,11 +194,9 @@ export const inviteConverter: FirestoreDataConverter<HouseholdInvite> = {
       expiresAt: invite.expiresAt,
     };
   },
-  fromFirestore(
-    snapshot: QueryDocumentSnapshot,
-    options: SnapshotOptions
-  ): HouseholdInvite {
-    const data = snapshot.data(options) as InviteDocument;
+  fromSnapshot(snapshot: DocumentSnapshot): HouseholdInvite | null {
+    const data = snapshot.data() as InviteDocument | undefined;
+    if (!data) return null;
     return {
       id: data.id,
       householdId: data.householdId,

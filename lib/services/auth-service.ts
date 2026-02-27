@@ -1,50 +1,35 @@
 /**
  * Authentication service
  * Handles all Firebase Auth operations including social sign-in (Apple, Google, Facebook).
- * Google and Facebook use conditional require() to avoid crashing in Expo Go.
  */
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { digestStringAsync, CryptoDigestAlgorithm, getRandomBytes } from 'expo-crypto';
 import {
+  AppleAuthProvider,
   createUserWithEmailAndPassword,
   FacebookAuthProvider,
+  type FirebaseAuthTypes,
   GoogleAuthProvider,
-  OAuthProvider,
-  signInWithCredential,
-  signOut as firebaseSignOut,
-  User as FirebaseUser,
   sendEmailVerification,
   sendPasswordResetEmail,
+  signInWithCredential,
   signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
   updateProfile,
-} from 'firebase/auth';
+} from '@react-native-firebase/auth';
 import { auth } from '../firebase/config';
-import { isExpoGo } from '../utils/expo-env';
 import { createDefaultHousehold } from './household-service';
 import { createUserProfile, getUserProfile } from './user-service';
 
-// ---------------------------------------------------------------------------
-// Conditionally load native social-auth SDKs (unavailable in Expo Go)
-// ---------------------------------------------------------------------------
-let GoogleSignin: any = null;
-let LoginManager: any = null;
-let AccessToken: any = null;
+const GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
 
-if (!isExpoGo) {
-  const google = require('@react-native-google-signin/google-signin');
-  GoogleSignin = google.GoogleSignin;
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+});
 
-  // Configure Google Sign-In with the web client ID from Firebase console
-  GoogleSignin.configure({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-  });
-
-  const facebook = require('react-native-fbsdk-next');
-  LoginManager = facebook.LoginManager;
-  AccessToken = facebook.AccessToken;
-}
+const { LoginManager, AccessToken } = require('react-native-fbsdk-next');
 
 export interface SignUpParams {
   email: string;
@@ -60,17 +45,14 @@ export interface SignInParams {
 /**
  * Sign up a new user with email, password, and display name
  */
-export async function signUp({ email, password, displayName }: SignUpParams): Promise<FirebaseUser> {
+export async function signUp({ email, password, displayName }: SignUpParams): Promise<FirebaseAuthTypes.User> {
   try {
-    // Create user account
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    
-    // Update user profile with display name
+
     await updateProfile(userCredential.user, { displayName });
-    
-    // Send email verification
+
     await sendEmailVerification(userCredential.user);
-    
+
     return userCredential.user;
   } catch (error: any) {
     console.error('Sign up error:', error);
@@ -81,7 +63,7 @@ export async function signUp({ email, password, displayName }: SignUpParams): Pr
 /**
  * Sign in an existing user
  */
-export async function signIn({ email, password }: SignInParams): Promise<FirebaseUser> {
+export async function signIn({ email, password }: SignInParams): Promise<FirebaseAuthTypes.User> {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
@@ -123,11 +105,11 @@ export async function resendVerificationEmail(): Promise<void> {
   if (!user) {
     throw new Error('No user is currently signed in');
   }
-  
+
   if (user.emailVerified) {
     throw new Error('Email is already verified');
   }
-  
+
   try {
     await sendEmailVerification(user);
   } catch (error: any) {
@@ -144,16 +126,14 @@ export async function resendVerificationEmail(): Promise<void> {
  * 3. Sign in to Firebase with Apple credential
  * 4. Create Firestore profile + default household for new users
  */
-export async function signInWithApple(): Promise<FirebaseUser> {
+export async function signInWithApple(): Promise<FirebaseAuthTypes.User> {
   try {
-    // Generate a secure nonce and its SHA-256 hash
     const rawNonce = generateNonce();
     const hashedNonce = await digestStringAsync(
       CryptoDigestAlgorithm.SHA256,
       rawNonce
     );
 
-    // Request Apple authentication
     const appleCredential = await AppleAuthentication.signInAsync({
       requestedScopes: [
         AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -166,43 +146,36 @@ export async function signInWithApple(): Promise<FirebaseUser> {
       throw new Error('No identity token received from Apple');
     }
 
-    // Create Firebase OAuth credential from Apple's identity token
-    const provider = new OAuthProvider('apple.com');
-    const oAuthCredential = provider.credential({
-      idToken: appleCredential.identityToken,
+    const oAuthCredential = AppleAuthProvider.credential(
+      appleCredential.identityToken,
       rawNonce,
-    });
+    );
 
-    // Sign in to Firebase
     const result = await signInWithCredential(auth, oAuthCredential);
 
-    // Build display name from Apple credential (only provided on first sign-in)
     const displayName = appleCredential.fullName
       ? [appleCredential.fullName.givenName, appleCredential.fullName.familyName]
           .filter(Boolean)
           .join(' ') || null
       : null;
 
-    // Update Firebase profile with display name if Apple provided it
     if (displayName) {
       await updateProfile(result.user, { displayName });
     }
 
-    // Create Firestore user profile + default household for new users
     const existingProfile = await getUserProfile(result.user.uid);
     if (!existingProfile) {
       await createUserProfile({
         uid: result.user.uid,
         email: result.user.email || '',
         displayName: displayName || result.user.displayName || 'User',
-        emailVerified: true, // Apple-verified emails are always verified
+        emailVerified: true,
       });
       await createDefaultHousehold(result.user.uid);
     }
 
     return result.user;
   } catch (error: any) {
-    // Don't treat user cancellation as an error
     if (error.code === 'ERR_REQUEST_CANCELED') {
       throw error;
     }
@@ -213,16 +186,10 @@ export async function signInWithApple(): Promise<FirebaseUser> {
 
 /**
  * Sign in with Google
- * Uses the native Google Sign-In SDK → Firebase credential flow.
- * Only available in custom dev builds / production (not Expo Go).
+ * Uses the native Google Sign-In SDK -> Firebase credential flow.
  */
-export async function signInWithGoogle(): Promise<FirebaseUser> {
-  if (isExpoGo) {
-    throw new Error('Google Sign-In is not available in Expo Go. Use a development build to test this feature.');
-  }
-
+export async function signInWithGoogle(): Promise<FirebaseAuthTypes.User> {
   try {
-    // Ensure Google Sign-In is configured
     await GoogleSignin.hasPlayServices();
     const response = await GoogleSignin.signIn();
     const idToken = response.data?.idToken;
@@ -231,11 +198,9 @@ export async function signInWithGoogle(): Promise<FirebaseUser> {
       throw new Error('No ID token received from Google');
     }
 
-    // Create Firebase credential and sign in
     const credential = GoogleAuthProvider.credential(idToken);
     const result = await signInWithCredential(auth, credential);
 
-    // Create Firestore user profile + default household for new users
     const existingProfile = await getUserProfile(result.user.uid);
     if (!existingProfile) {
       await createUserProfile({
@@ -249,7 +214,6 @@ export async function signInWithGoogle(): Promise<FirebaseUser> {
 
     return result.user;
   } catch (error: any) {
-    // Don't treat user cancellation as an error
     if (error.code === 'SIGN_IN_CANCELLED' || error.code === 'ERR_REQUEST_CANCELED') {
       throw error;
     }
@@ -260,16 +224,10 @@ export async function signInWithGoogle(): Promise<FirebaseUser> {
 
 /**
  * Sign in with Facebook
- * Uses the native Facebook SDK → Firebase credential flow.
- * Only available in custom dev builds / production (not Expo Go).
+ * Uses the native Facebook SDK -> Firebase credential flow.
  */
-export async function signInWithFacebook(): Promise<FirebaseUser> {
-  if (isExpoGo) {
-    throw new Error('Facebook Sign-In is not available in Expo Go. Use a development build to test this feature.');
-  }
-
+export async function signInWithFacebook(): Promise<FirebaseAuthTypes.User> {
   try {
-    // Request login with public_profile and email permissions
     const loginResult = await LoginManager.logInWithPermissions(['public_profile', 'email']);
 
     if (loginResult.isCancelled) {
@@ -278,17 +236,14 @@ export async function signInWithFacebook(): Promise<FirebaseUser> {
       throw cancelError;
     }
 
-    // Get the access token
     const tokenData = await AccessToken.getCurrentAccessToken();
     if (!tokenData?.accessToken) {
       throw new Error('No access token received from Facebook');
     }
 
-    // Create Firebase credential and sign in
     const credential = FacebookAuthProvider.credential(tokenData.accessToken);
     const result = await signInWithCredential(auth, credential);
 
-    // Create Firestore user profile + default household for new users
     const existingProfile = await getUserProfile(result.user.uid);
     if (!existingProfile) {
       await createUserProfile({
@@ -302,7 +257,6 @@ export async function signInWithFacebook(): Promise<FirebaseUser> {
 
     return result.user;
   } catch (error: any) {
-    // Don't treat user cancellation as an error
     if (error.code === 'ERR_REQUEST_CANCELED') {
       throw error;
     }

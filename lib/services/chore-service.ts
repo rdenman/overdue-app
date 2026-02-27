@@ -16,7 +16,7 @@ import {
   Timestamp,
   updateDoc,
   where,
-} from 'firebase/firestore';
+} from '@react-native-firebase/firestore';
 import { firestore } from '../firebase/config';
 import { choreConverter } from '../firebase/converters';
 import {
@@ -48,7 +48,6 @@ export function calculateNextDueDate(from: Date, interval: Interval): Date {
       next.setFullYear(next.getFullYear() + interval.value);
       break;
     case 'custom':
-      // custom value is in days
       next.setDate(next.getDate() + interval.value);
       break;
   }
@@ -90,10 +89,6 @@ export async function createChore(input: ChoreCreateInput): Promise<Chore> {
     const choreRef = doc(collection(firestore, 'chores'));
     const now = Timestamp.now();
 
-    // Determine dueAt:
-    // 1. If caller explicitly provided a dueAt (including null for no-deadline), use it.
-    // 2. For one-off chores with no explicit date, default to null.
-    // 3. Otherwise, auto-calculate from interval.
     let dueAt: Timestamp | null;
     if (input.dueAt !== undefined) {
       dueAt = input.dueAt;
@@ -119,10 +114,7 @@ export async function createChore(input: ChoreCreateInput): Promise<Chore> {
       isOverdue: false,
     };
 
-    const choreDocRef = doc(firestore, 'chores', chore.id).withConverter(
-      choreConverter
-    );
-    await setDoc(choreDocRef, chore);
+    await setDoc(choreRef, choreConverter.toFirestore(chore));
 
     return chore;
   } catch (error) {
@@ -133,11 +125,8 @@ export async function createChore(input: ChoreCreateInput): Promise<Chore> {
 
 export async function getChore(choreId: string): Promise<Chore | null> {
   try {
-    const choreRef = doc(firestore, 'chores', choreId).withConverter(
-      choreConverter
-    );
-    const snap = await getDoc(choreRef);
-    return snap.exists() ? snap.data() : null;
+    const snap = await getDoc(doc(firestore, 'chores', choreId));
+    return choreConverter.fromSnapshot(snap);
   } catch (error) {
     console.error('Error getting chore:', error);
     throw new Error('Failed to load chore');
@@ -148,16 +137,17 @@ export async function getHouseholdChores(
   householdId: string
 ): Promise<Chore[]> {
   try {
-    const choresRef = collection(firestore, 'chores').withConverter(
-      choreConverter
+    const snap = await getDocs(
+      query(
+        collection(firestore, 'chores'),
+        where('householdId', '==', householdId),
+        orderBy('dueAt', 'asc'),
+      ),
     );
-    const q = query(
-      choresRef,
-      where('householdId', '==', householdId),
-      orderBy('dueAt', 'asc')
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data());
+
+    return snap.docs
+      .map((d: any) => choreConverter.fromSnapshot(d))
+      .filter((c: any): c is Chore => c !== null);
   } catch (error) {
     console.error('Error getting household chores:', error);
     throw new Error('Failed to load chores');
@@ -170,23 +160,23 @@ export async function getChoresForHouseholds(
   if (householdIds.length === 0) return [];
 
   try {
-    // Firestore 'in' queries support up to 30 values
     const batches: Chore[] = [];
     for (let i = 0; i < householdIds.length; i += 30) {
       const batch = householdIds.slice(i, i + 30);
-      const choresRef = collection(firestore, 'chores').withConverter(
-        choreConverter
+      const snap = await getDocs(
+        query(
+          collection(firestore, 'chores'),
+          where('householdId', 'in', batch),
+          orderBy('dueAt', 'asc'),
+        ),
       );
-      const q = query(
-        choresRef,
-        where('householdId', 'in', batch),
-        orderBy('dueAt', 'asc')
-      );
-      const snap = await getDocs(q);
-      batches.push(...snap.docs.map((d) => d.data()));
+
+      const chores = snap.docs
+        .map((d: any) => choreConverter.fromSnapshot(d))
+        .filter((c: any): c is Chore => c !== null);
+      batches.push(...chores);
     }
 
-    // Sort merged results by dueAt (null dueAt pushed to end)
     batches.sort((a, b) => {
       if (!a.dueAt && !b.dueAt) return 0;
       if (!a.dueAt) return 1;
@@ -205,16 +195,12 @@ export async function updateChore(
   updates: ChoreUpdateInput
 ): Promise<void> {
   try {
-    const choreRef = doc(firestore, 'chores', choreId);
-
-    // Firestore rejects `undefined` values — convert them to deleteField()
-    // so optional fields are properly removed from the document.
     const sanitized: Record<string, any> = {};
     for (const [key, value] of Object.entries(updates)) {
       sanitized[key] = value === undefined ? deleteField() : value;
     }
 
-    await updateDoc(choreRef, {
+    await updateDoc(doc(firestore, 'chores', choreId), {
       ...sanitized,
       updatedAt: Timestamp.now(),
     });
@@ -244,26 +230,25 @@ export async function completeChore(
     if (!chore) throw new Error('Chore not found');
 
     const isOneOff = chore.interval.type === 'once';
+    const choreRef = doc(firestore, 'chores', choreId);
 
     if (isOneOff) {
-      // One-off chores don't recur — just mark completed, keep dueAt as-is
-      await updateDoc(doc(firestore, 'chores', choreId), {
+      await updateDoc(choreRef, {
         lastCompletion: {
           completedAt: Timestamp.now(),
           completedBy: userId,
-          previousDueAt: chore.dueAt, // may be null
+          previousDueAt: chore.dueAt,
         },
         isOverdue: false,
         updatedAt: Timestamp.now(),
       });
     } else {
-      // Recurring chores: calculate next due date
       const now = new Date();
-      const dueDate = chore.dueAt!.toDate(); // recurring chores always have dueAt
+      const dueDate = chore.dueAt!.toDate();
       const baseDate = now > dueDate ? now : dueDate;
       const nextDue = calculateNextDueDate(baseDate, chore.interval);
 
-      await updateDoc(doc(firestore, 'chores', choreId), {
+      await updateDoc(choreRef, {
         lastCompletion: {
           completedAt: Timestamp.now(),
           completedBy: userId,
@@ -293,7 +278,7 @@ export async function undoCompletion(choreId: string): Promise<void> {
 
     await updateDoc(doc(firestore, 'chores', choreId), {
       lastCompletion: null,
-      dueAt: restoredDueAt, // may be null for one-off chores
+      dueAt: restoredDueAt,
       isOverdue: nowOverdue,
       updatedAt: Timestamp.now(),
     });

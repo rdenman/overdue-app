@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@react-native-firebase/firestore';
 
 /**
  * Room domain types

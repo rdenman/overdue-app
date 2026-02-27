@@ -28,7 +28,7 @@ import {
 import { ChoreUpdateInput, IntervalType } from '@/lib/types/chore';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@react-native-firebase/firestore';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,

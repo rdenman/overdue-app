@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-// ── Firebase SDK mocks ──
+// ── React Native Firebase mocks ──
 
 // Lightweight Timestamp that mirrors the Firebase Timestamp API surface
 // used throughout the app (fromDate, fromMillis, now, toDate, toMillis).
@@ -42,6 +42,46 @@ class MockTimestamp {
   }
 }
 
+jest.mock('@react-native-firebase/firestore', () => ({
+  __esModule: true,
+  getFirestore: jest.fn(() => ({})),
+  collection: jest.fn(),
+  doc: jest.fn(() => ({ id: 'auto-id' })),
+  getDoc: jest.fn(),
+  getDocs: jest.fn().mockResolvedValue({ empty: true, docs: [] }),
+  setDoc: jest.fn().mockResolvedValue(undefined),
+  updateDoc: jest.fn().mockResolvedValue(undefined),
+  deleteDoc: jest.fn().mockResolvedValue(undefined),
+  query: jest.fn(),
+  where: jest.fn(),
+  orderBy: jest.fn(),
+  Timestamp: MockTimestamp,
+  serverTimestamp: jest.fn(() => ({ _type: 'serverTimestamp' })),
+  deleteField: jest.fn(() => ({ _type: 'deleteField' })),
+}));
+
+jest.mock('@react-native-firebase/auth', () => ({
+  __esModule: true,
+  getAuth: jest.fn(() => ({ currentUser: null })),
+  createUserWithEmailAndPassword: jest.fn(),
+  signInWithEmailAndPassword: jest.fn(),
+  signOut: jest.fn(),
+  signInWithCredential: jest.fn(),
+  onAuthStateChanged: jest.fn(),
+  sendPasswordResetEmail: jest.fn(),
+  sendEmailVerification: jest.fn(),
+  updateProfile: jest.fn(),
+  GoogleAuthProvider: { credential: jest.fn() },
+  FacebookAuthProvider: { credential: jest.fn() },
+  AppleAuthProvider: { credential: jest.fn() },
+}));
+
+jest.mock('@react-native-firebase/app', () => ({
+  __esModule: true,
+  default: {},
+}));
+
+// Keep web SDK mocks for scripts/tests that still import from it
 jest.mock('firebase/firestore', () => ({
   Timestamp: MockTimestamp,
   collection: jest.fn(),
@@ -82,20 +122,17 @@ jest.mock('firebase/functions', () => ({
 }));
 
 jest.mock('@/lib/firebase/config', () => ({
+  auth: { currentUser: null },
   firestore: {},
-  auth: {},
-  app: {},
-  functions: {},
-  ENV: 'test',
 }));
 
 jest.mock('@/lib/firebase/converters', () => ({
-  choreConverter: { toFirestore: jest.fn(), fromFirestore: jest.fn() },
-  householdConverter: { toFirestore: jest.fn(), fromFirestore: jest.fn() },
-  householdMemberConverter: { toFirestore: jest.fn(), fromFirestore: jest.fn() },
-  roomConverter: { toFirestore: jest.fn(), fromFirestore: jest.fn() },
-  userConverter: { toFirestore: jest.fn(), fromFirestore: jest.fn() },
-  inviteConverter: { toFirestore: jest.fn(), fromFirestore: jest.fn() },
+  choreConverter: { toFirestore: jest.fn((d: any) => d), fromSnapshot: jest.fn() },
+  householdConverter: { toFirestore: jest.fn((d: any) => d), fromSnapshot: jest.fn() },
+  householdMemberConverter: { toFirestore: jest.fn((d: any) => d), fromSnapshot: jest.fn() },
+  roomConverter: { toFirestore: jest.fn((d: any) => d), fromSnapshot: jest.fn() },
+  userConverter: { toFirestore: jest.fn((d: any) => d), fromSnapshot: jest.fn() },
+  inviteConverter: { toFirestore: jest.fn((d: any) => d), fromSnapshot: jest.fn() },
 }));
 
 // ── App context mocks ──

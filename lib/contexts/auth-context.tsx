@@ -3,12 +3,12 @@
  * Provides auth state and user information throughout the app
  */
 
-import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, type FirebaseAuthTypes } from '@react-native-firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth } from '../firebase/config';
 
 interface AuthContextType {
-  user: FirebaseUser | null;
+  user: FirebaseAuthTypes.User | null;
   loading: boolean;
   isAuthenticated: boolean;
 }
@@ -16,7 +16,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

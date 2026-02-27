@@ -14,7 +14,7 @@ import {
   Timestamp,
   updateDoc,
   where,
-} from 'firebase/firestore';
+} from '@react-native-firebase/firestore';
 import { firestore } from '../firebase/config';
 import { householdConverter } from '../firebase/converters';
 import {
@@ -42,7 +42,7 @@ export async function createHousehold(input: HouseholdCreateInput): Promise<Hous
   try {
     const householdRef = doc(collection(firestore, 'households'));
     const now = Timestamp.now();
-    
+
     const household: Household = {
       id: householdRef.id,
       name: input.name,
@@ -50,22 +50,17 @@ export async function createHousehold(input: HouseholdCreateInput): Promise<Hous
       createdAt: now,
       updatedAt: now,
     };
-    
-    const householdDocRef = doc(firestore, 'households', household.id).withConverter(
-      householdConverter
-    );
-    await setDoc(householdDocRef, household);
-    
-    // Create membership for the owner
+
+    await setDoc(householdRef, householdConverter.toFirestore(household));
+
     await createHouseholdMember({
       householdId: household.id,
       userId: input.ownerId,
       role: 'admin',
     });
-    
-    // Create default rooms for the household
+
     await createDefaultRooms(household.id);
-    
+
     return household;
   } catch (error) {
     console.error('Error creating household:', error);
@@ -88,15 +83,8 @@ export async function createDefaultHousehold(userId: string): Promise<Household>
  */
 export async function getHousehold(householdId: string): Promise<Household | null> {
   try {
-    const householdRef = doc(firestore, 'households', householdId).withConverter(
-      householdConverter
-    );
-    const householdSnap = await getDoc(householdRef);
-    
-    if (householdSnap.exists()) {
-      return householdSnap.data();
-    }
-    return null;
+    const snap = await getDoc(doc(firestore, 'households', householdId));
+    return householdConverter.fromSnapshot(snap);
   } catch (error) {
     console.error('Error getting household:', error);
     throw new Error('Failed to load household');
@@ -111,8 +99,7 @@ export async function updateHousehold(
   updates: HouseholdUpdateInput
 ): Promise<void> {
   try {
-    const householdRef = doc(firestore, 'households', householdId);
-    await updateDoc(householdRef, {
+    await updateDoc(doc(firestore, 'households', householdId), {
       ...updates,
       updatedAt: Timestamp.now(),
     });
@@ -127,21 +114,18 @@ export async function updateHousehold(
  */
 export async function getUserHouseholds(userId: string): Promise<Household[]> {
   try {
-    // First, get all household memberships for the user
-    const membersRef = collection(firestore, 'householdMembers');
-    const membersQuery = query(membersRef, where('userId', '==', userId));
-    const membersSnap = await getDocs(membersQuery);
-    
+    const membersSnap = await getDocs(
+      query(collection(firestore, 'householdMembers'), where('userId', '==', userId)),
+    );
+
     if (membersSnap.empty) {
       return [];
     }
-    
-    // Get household IDs from memberships
+
     const householdIds = membersSnap.docs.map(
-      (doc) => doc.data().householdId
+      (d: any) => d.data().householdId
     );
-    
-    // Fetch all households
+
     const households: Household[] = [];
     for (const householdId of householdIds) {
       const household = await getHousehold(householdId);
@@ -149,7 +133,7 @@ export async function getUserHouseholds(userId: string): Promise<Household[]> {
         households.push(household);
       }
     }
-    
+
     return households;
   } catch (error) {
     console.error('Error getting user households:', error);
@@ -167,7 +151,6 @@ export async function deleteHousehold(
   requestingUserId: string
 ): Promise<void> {
   try {
-    // Verify requesting user is the owner
     const household = await getHousehold(householdId);
     if (!household) {
       throw new Error('Household not found');
@@ -178,30 +161,30 @@ export async function deleteHousehold(
     }
 
     // Delete invites first (while owner's membership still exists for security rules)
-    const invitesRef = collection(firestore, 'invites');
-    const invitesQuery = query(invitesRef, where('householdId', '==', householdId));
-    const invitesSnap = await getDocs(invitesQuery);
+    const invitesSnap = await getDocs(
+      query(collection(firestore, 'invites'), where('householdId', '==', householdId)),
+    );
     for (const inviteDoc of invitesSnap.docs) {
       await deleteDoc(inviteDoc.ref);
     }
 
     // Delete chores (while owner's membership still exists for security rules)
-    const choresRef = collection(firestore, 'chores');
-    const choresQuery = query(choresRef, where('householdId', '==', householdId));
-    const choresSnap = await getDocs(choresQuery);
+    const choresSnap = await getDocs(
+      query(collection(firestore, 'chores'), where('householdId', '==', householdId)),
+    );
     for (const choreDoc of choresSnap.docs) {
       await deleteDoc(choreDoc.ref);
     }
 
     // Delete all rooms in the household
-    const roomsRef = collection(firestore, 'households', householdId, 'rooms');
-    const roomsSnap = await getDocs(roomsRef);
+    const roomsSnap = await getDocs(
+      collection(firestore, 'households', householdId, 'rooms'),
+    );
     for (const roomDoc of roomsSnap.docs) {
       await deleteDoc(roomDoc.ref);
     }
 
     // Delete all household members, but delete the owner's membership last
-    // (security rules require the owner's membership to exist for admin checks)
     const members = await getHouseholdMembers(householdId);
     const otherMembers = members.filter((m) => m.userId !== requestingUserId);
     const ownerMember = members.find((m) => m.userId === requestingUserId);

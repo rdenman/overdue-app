@@ -13,7 +13,7 @@ import {
   setDoc,
   Timestamp,
   where,
-} from 'firebase/firestore';
+} from '@react-native-firebase/firestore';
 import { firestore } from '../firebase/config';
 import { householdMemberConverter } from '../firebase/converters';
 import {
@@ -29,10 +29,7 @@ export async function createHouseholdMember(
 ): Promise<HouseholdMember> {
   try {
     const memberId = `${input.householdId}_${input.userId}`;
-    const memberRef = doc(firestore, 'householdMembers', memberId).withConverter(
-      householdMemberConverter
-    );
-    
+
     const member: HouseholdMember = {
       id: memberId,
       householdId: input.householdId,
@@ -40,8 +37,12 @@ export async function createHouseholdMember(
       role: input.role,
       joinedAt: Timestamp.now(),
     };
-    
-    await setDoc(memberRef, member);
+
+    await setDoc(
+      doc(firestore, 'householdMembers', memberId),
+      householdMemberConverter.toFirestore(member),
+    );
+
     return member;
   } catch (error) {
     console.error('Error creating household member:', error);
@@ -58,15 +59,9 @@ export async function getHouseholdMember(
 ): Promise<HouseholdMember | null> {
   try {
     const memberId = `${householdId}_${userId}`;
-    const memberRef = doc(firestore, 'householdMembers', memberId).withConverter(
-      householdMemberConverter
-    );
-    const memberSnap = await getDoc(memberRef);
-    
-    if (memberSnap.exists()) {
-      return memberSnap.data();
-    }
-    return null;
+    const snap = await getDoc(doc(firestore, 'householdMembers', memberId));
+
+    return householdMemberConverter.fromSnapshot(snap);
   } catch (error) {
     console.error('Error getting household member:', error);
     throw new Error('Failed to load household member');
@@ -78,14 +73,14 @@ export async function getHouseholdMember(
  */
 export async function getHouseholdMembers(householdId: string): Promise<HouseholdMember[]> {
   try {
-    const membersRef = collection(firestore, 'householdMembers');
-    const membersQuery = query(membersRef, where('householdId', '==', householdId));
-    const membersSnap = await getDocs(membersQuery);
-    
-    return membersSnap.docs.map((doc) => {
-      const data = doc.data();
+    const snap = await getDocs(
+      query(collection(firestore, 'householdMembers'), where('householdId', '==', householdId)),
+    );
+
+    return snap.docs.map((d: any) => {
+      const data = d.data();
       return {
-        id: doc.id,
+        id: d.id,
         ...data,
       } as HouseholdMember;
     });
@@ -119,7 +114,7 @@ export async function removeHouseholdMember(
     if (isSelfRemoval && isAdmin) {
       const members = await getHouseholdMembers(householdId);
       const adminCount = members.filter((m) => m.role === 'admin').length;
-      
+
       if (adminCount === 1) {
         throw new Error(
           'Cannot leave household as the last admin. Please delete the household or promote another member to admin first.'
@@ -128,8 +123,7 @@ export async function removeHouseholdMember(
     }
 
     const memberId = `${householdId}_${userId}`;
-    const memberRef = doc(firestore, 'householdMembers', memberId);
-    await deleteDoc(memberRef);
+    await deleteDoc(doc(firestore, 'householdMembers', memberId));
   } catch (error) {
     console.error('Error removing household member:', error);
     throw error;
